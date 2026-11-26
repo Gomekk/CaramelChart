@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CARAMEL MAP</title>
+<meta name="description" content="キャラメルのあるカフェを巡った記録。味のチャートと地図">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600&family=Montserrat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#f7f1e8; --paper:#fffaf3; --caramel:#b8742a; --caramel-dark:#7a4a1c;
+    --ink:#3b2a1c; --muted:#8a7766; --line:#e6d9c7; --axis:#b9a58f; --sweet:#d9a25b; --bitter:#5a3416;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--cream);color:var(--ink);
+    font-family:"Noto Serif JP",serif;-webkit-font-smoothing:antialiased}
+  .en{font-family:Montserrat,sans-serif;letter-spacing:.32em;font-weight:600}
+  header{padding:28px 20px 10px;text-align:center}
+  header .en{font-size:13px;color:var(--caramel)}
+  header h1{margin:6px 0 4px;font-size:30px;font-weight:600;letter-spacing:.08em}
+  header p{margin:0;font-size:13px;color:var(--muted)}
+  .count{margin-top:10px;font-size:12px;color:var(--muted)}
+  .count b{color:var(--caramel-dark);font-size:16px}
+
+  section{max-width:720px;margin:0 auto;padding:0 16px}
+  h2.sec{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:600;margin:26px 0 12px}
+  h2.sec .en{font-size:10px;color:var(--caramel);letter-spacing:.28em}
+
+  .filters{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:14px 16px 0}
+  .filters button{font:inherit;font-size:13px;padding:7px 16px;border-radius:999px;
+    border:1px solid var(--caramel);background:transparent;color:var(--caramel-dark);cursor:pointer}
+  .filters button.on{background:var(--caramel);color:#fff}
+
+  /* ---- taste chart ---- */
+  .chart-wrap{position:relative;background:var(--paper);border:1px solid var(--line);border-radius:4px;padding:10px}
+  #chart{display:block;width:100%;height:auto;touch-action:manipulation}
+  #chart .bg{fill:transparent}
+  #chart .bg.zoomable{cursor:zoom-in}
+  #chart .axis{stroke:var(--axis);stroke-width:2.5}
+  #chart .grid{stroke:var(--line);stroke-width:1}
+  #chart .tick{fill:var(--muted);font-size:19px;font-family:Montserrat,sans-serif}
+  #chart .lab rect{fill:var(--caramel-dark)}
+  #chart .lab text{fill:#fff;font-size:22px;font-family:"Noto Serif JP",serif;letter-spacing:.1em}
+  #chart .lab.bit rect{fill:var(--bitter)}
+  #chart .lab.sw rect{fill:var(--sweet)}
+  #chart .qname{fill:var(--caramel-dark);font-size:26px;font-family:"Noto Serif JP",serif;letter-spacing:.15em}
+  #chart .pt{cursor:pointer}
+  #chart .pt text.nm{font-size:22px;fill:var(--ink);font-family:"Noto Serif JP",serif}
+  #chart .pt text.sh{font-size:14px;fill:var(--muted);font-family:Montserrat,sans-serif;letter-spacing:.12em}
+  #chart .pt .halo{fill:none;stroke:var(--caramel);stroke-width:2.5;opacity:0}
+  #chart .pt.active .halo{opacity:1}
+
+  .zoombar{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
+  .zoombar button{font:inherit;font-size:11px;line-height:1.35;padding:7px 2px;border-radius:4px;
+    border:1px solid var(--line);background:var(--cream);color:var(--caramel-dark);cursor:pointer}
+  .zoombar button.on{background:var(--caramel-dark);border-color:var(--caramel-dark);color:#fff}
+  .legend{display:flex;gap:16px;justify-content:center;font-size:12px;color:var(--muted);padding:10px 0 2px}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+  .legend .d{background:var(--caramel-dark)}
+  .legend .s{background:#fff;border:3px solid var(--caramel)}
+  .legend .f{background:#e0c39a;border-radius:2px}
+  .hint{font-size:11px;color:var(--muted);text-align:center;margin:6px 0 0}
+
+  /* popup */
+  .tip{position:absolute;z-index:10;width:236px;background:var(--paper);border:1px solid var(--line);
+    border-radius:6px;box-shadow:0 10px 30px rgba(60,35,10,.18);padding:14px 16px 12px;
+    opacity:0;transform:translateY(6px) scale(.98);pointer-events:none;transition:opacity .18s,transform .18s}
+  .tip.show{opacity:1;transform:none;pointer-events:auto}
+  .tip .x{position:absolute;top:6px;right:8px;border:0;background:none;font-size:18px;color:var(--muted);cursor:pointer;line-height:1}
+  .tip .bal{display:inline-block;background:#c89a6a;color:#fff;font-size:11px;padding:3px 12px;border-radius:999px;margin-bottom:8px;position:relative}
+  .tip .bal::after{content:"";position:absolute;left:14px;bottom:-5px;border:5px solid transparent;border-bottom:0;border-top-color:#c89a6a}
+  .tip .area{font-size:9px;color:var(--caramel)}
+  .tip .shop{font-size:17px;font-weight:600;margin:2px 0 2px}
+  .tip .item{font-size:13px;margin:0 0 8px}
+  .tip .item span{font-family:Montserrat,sans-serif;font-size:9px;letter-spacing:.14em;color:var(--muted);margin-right:6px}
+  .tip .score{display:flex;gap:10px;font-size:11px;color:var(--muted);border-top:1px solid var(--line);padding-top:8px;margin-bottom:10px}
+  .tip .score b{color:var(--caramel-dark);font-family:Montserrat,sans-serif;font-size:13px;margin-left:3px}
+  .tip .btns{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .tip .btns a{display:block;text-align:center;font-size:12px;padding:8px 4px;border-radius:4px;text-decoration:none;cursor:pointer}
+  .tip .btns .ig{background:var(--caramel-dark);color:#fff}
+  .tip .btns .ig.off{background:var(--line);color:var(--muted);pointer-events:none}
+  .tip .btns .mp{border:1px solid var(--caramel);color:var(--caramel-dark)}
+
+  /* ---- map ---- */
+  #map{height:46vh;min-height:300px;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+  .leaflet-container{background:var(--cream);font-family:inherit}
+  .pin{width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);
+    background:var(--caramel);border:2px solid #fff;box-shadow:0 2px 6px rgba(60,35,10,.35)}
+  .pin::after{content:"";position:absolute;width:10px;height:10px;border-radius:50%;background:#fff;top:8px;left:8px}
+  .leaflet-popup-content-wrapper{border-radius:4px;background:var(--paper)}
+  .leaflet-popup-content{margin:12px 14px;font-family:"Noto Serif JP",serif;color:var(--ink)}
+  .pop .area{font-size:9px;color:var(--caramel)}
+  .pop h3{margin:2px 0 4px;font-size:15px}
+  .pop p{margin:0;font-size:12px;line-height:1.6}
+
+  /* ---- list ---- */
+  .list{display:grid;gap:14px;padding-bottom:40px}
+  .card{display:flex;gap:14px;background:var(--paper);border:1px solid var(--line);border-radius:4px;padding:12px;scroll-margin-top:20px}
+  .card.active{border-color:var(--caramel);box-shadow:0 0 0 2px rgba(184,116,42,.25)}
+  .card img{width:96px;height:128px;object-fit:cover;border-radius:2px;flex:none;background:var(--line)}
+  .card .noimg{width:96px;height:128px;flex:none;display:flex;align-items:center;justify-content:center;
+    background:var(--line);color:var(--muted);font-size:11px;border-radius:2px}
+  .card .body{min-width:0;flex:1}
+  .card .area{font-size:10px;color:var(--caramel)}
+  .card h3{margin:2px 0 6px;font-size:18px;font-weight:600}
+  .card ul{list-style:none;margin:0 0 6px;padding:0;font-size:13px;line-height:1.7}
+  .card li span{font-family:Montserrat,sans-serif;font-size:10px;letter-spacing:.12em;color:var(--muted);margin-right:6px}
+  .card .meta{font-size:11px;color:var(--muted)}
+  .links{margin-top:8px;display:flex;gap:12px;flex-wrap:wrap}
+  .links a{font-size:12px;color:var(--caramel-dark);text-decoration:none;border-bottom:1px solid var(--caramel);cursor:pointer}
+
+  footer{text-align:center;padding:0 16px 32px;font-size:11px;color:var(--muted)}
+  footer a{color:var(--caramel-dark)}
+
+  /* ================= animations ================= */
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  @keyframes draw{to{stroke-dashoffset:0}}
+  @keyframes pop{0%{opacity:0;transform:scale(0)}60%{opacity:1;transform:scale(1.25)}100%{opacity:1;transform:scale(1)}}
+  @keyframes ripple{0%{opacity:.55;transform:scale(1)}100%{opacity:0;transform:scale(2.6)}}
+  @keyframes drip{0%{transform:translateY(-4px) scaleY(.6);opacity:0}25%{opacity:1}70%{transform:translateY(10px) scaleY(1.05);opacity:1}100%{transform:translateY(18px) scaleY(1);opacity:0}}
+  @keyframes shine{from{background-position:-200% 0}to{background-position:200% 0}}
+
+  header .en, header h1 .ch, header p, header .count{opacity:0;animation:rise .8s cubic-bezier(.2,.7,.2,1) forwards}
+  header .en{animation-delay:.05s}
+  header h1 .ch{display:inline-block}
+  header p{animation-delay:1.1s}
+  header .count{animation-delay:1.3s}
+  header h1{background:linear-gradient(100deg,var(--ink) 40%,#c88a45 50%,var(--ink) 60%);background-size:200% 100%;
+    -webkit-background-clip:text;background-clip:text}
+  header h1.shine .ch{color:transparent;animation:none;opacity:1}
+  header h1.shine{animation:shine 2.4s ease-in-out 1}
+  .drizzle{display:block;margin:4px auto 0;width:220px;height:34px;overflow:visible}
+  .drizzle path{fill:none;stroke:var(--caramel);stroke-width:3;stroke-linecap:round;stroke-dasharray:400;stroke-dashoffset:400;animation:draw 1.6s .6s ease-in-out forwards}
+  .drizzle .drop{fill:var(--caramel);opacity:0;transform-box:fill-box;transform-origin:center top;animation:drip 2.6s 2s ease-in infinite}
+  .drizzle .drop.d2{animation-delay:3.1s}
+
+  .reveal{opacity:0;transform:translateY(24px);transition:opacity .9s ease,transform .9s cubic-bezier(.2,.7,.2,1)}
+  .reveal.in{opacity:1;transform:none}
+  .card{opacity:0;transform:translateY(18px)}
+  .card.in{animation:rise .7s cubic-bezier(.2,.7,.2,1) forwards;animation-delay:var(--d,0s)}
+  .card{transition:box-shadow .25s,border-color .25s,transform .25s}
+  .card:hover{transform:translateY(-2px)}
+
+  #chart .a-draw{stroke-dasharray:var(--len);stroke-dashoffset:var(--len);animation:draw 1s ease-in-out forwards;animation-delay:var(--d,0s)}
+  #chart .a-fade{opacity:0;animation:fade .6s ease forwards;animation-delay:var(--d,0s)}
+  #chart .a-pop{opacity:0;transform-box:fill-box;transform-origin:center;animation:pop .55s cubic-bezier(.3,1.5,.5,1) forwards;animation-delay:var(--d,0s)}
+  #chart .ring{fill:none;stroke:var(--caramel);stroke-width:2;transform-box:fill-box;transform-origin:center;opacity:0;animation:ripple 2.8s ease-out infinite;animation-delay:var(--d,0s)}
+  #chart .pt .mark{transition:transform .2s;transform-box:fill-box;transform-origin:center}
+  #chart .pt:hover .mark,#chart .pt.active .mark{transform:scale(1.25)}
+  #chart .bg.zoomable:hover{fill:rgba(184,116,42,.03)}
+  #chart.swap{animation:fade .45s ease}
+
+  .filters button,.zoombar button{transition:background .25s,color .25s,transform .15s}
+  .filters button:active,.zoombar button:active{transform:scale(.95)}
+  .tip .btns a{transition:filter .2s,transform .15s}
+  .tip .btns a:active{transform:scale(.96)}
+  .tip .btns .ig:hover{filter:brightness(1.12)}
+
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation:none!important;transition:none!important}
+    header .en,header h1 .ch,header p,header .count,.reveal,.card,#chart .a-fade,#chart .a-pop{opacity:1!important;transform:none!important}
+    #chart .a-draw,.drizzle path{stroke-dashoffset:0!important}
+    #chart .ring,.drizzle .drop{display:none}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="en">CARAMEL MAP</div>
+  <h1 id="title">キャラメルのある場所</h1>
+  <svg class="drizzle" viewBox="0 0 220 34" aria-hidden="true">
+    <path d="M6 10 C 40 2, 60 22, 92 12 S 140 2, 160 14 S 196 20, 214 8"/>
+    <ellipse class="drop" cx="92" cy="16" rx="3.2" ry="4.6"/>
+    <ellipse class="drop d2" cx="160" cy="18" rx="2.8" ry="4"/>
+  </svg>
+  <p>巡ったカフェのキャラメルを、味と場所で記録しています</p>
+  <div class="count"><b id="count">0</b> shops ／ <b id="icount">0</b> caramels</div>
+</header>
+
+<div class="filters" id="filters">
+  <button data-f="all" class="on">すべて</button>
+  <button data-f="drink">drink</button>
+  <button data-f="sweets">sweets</button>
+  <button data-f="food">food</button>
+</div>
+
+<section class="reveal">
+  <h2 class="sec">味のチャート <span class="en">TASTE CHART</span></h2>
+  <div class="chart-wrap" id="chartWrap">
+    <svg id="chart" viewBox="0 0 700 700" role="img" aria-label="キャラメルの味のチャート。横軸は左がほろ苦い・右が甘い、縦軸は下がほんのり・上がキャラメル全開"></svg>
+    <div class="zoombar" id="zoombar">
+      <button data-q="all" class="on">全体</button>
+      <button data-q="tl">ほろ苦い<br>×全開</button>
+      <button data-q="tr">甘い<br>×全開</button>
+      <button data-q="bl">ほろ苦い<br>×ほんのり</button>
+      <button data-q="br">甘い<br>×ほんのり</button>
+    </div>
+    <div class="legend"><span><i class="d"></i>drink</span><span><i class="s"></i>sweets</span><span><i class="f"></i>food</span></div>
+    <div class="tip" id="tip" role="dialog" aria-live="polite"></div>
+  </div>
+  <p class="hint">点を押すとお店の情報が開きます。グラフの空いているところを押すと、その4分の1を拡大します</p>
+</section>
+
+<section class="reveal">
+  <h2 class="sec">地図 <span class="en">MAP</span></h2>
+  <div id="map"></div>
+</section>
+
+<section class="reveal">
+  <h2 class="sec">お店 <span class="en">SHOPS</span></h2>
+  <main class="list" id="list"></main>
+</section>
+
+<footer>
+  Instagram：<a id="ig" href="#" target="_blank" rel="noopener">@アカウント名</a>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="shops.js"></script>
+<script>
+  // ▼ ここを自分のインスタのアカウント名に変えてください（@なし）
+  const INSTAGRAM_ID = "gome_kkk";
+
+  const ig = document.getElementById("ig");
+  ig.textContent = "@" + INSTAGRAM_ID;
+  ig.href = "https://www.instagram.com/" + INSTAGRAM_ID + "/";
+
+  const shops = (window.SHOPS || []).slice().sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  const allItems = shops.flatMap(s => s.items.map((it, k) => ({ ...it, shop: s, key: s.id + "-" + k })));
+  document.getElementById("count").textContent = shops.length;
+  document.getElementById("icount").textContent = allItems.length;
+
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const fmtDate = d => d ? d.replaceAll("-", ".") : "";
+  const fmtNum = v => (Math.round(Number(v) * 10) / 10).toFixed(1);
+  const gmap = s => "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(s.name + " " + s.address);
+
+  /* ================= taste chart ================= */
+  const SVGNS = "http://www.w3.org/2000/svg";
+  const chart = document.getElementById("chart");
+  const tip = document.getElementById("tip");
+  const SIZE = 700, PAD = 80, INNER = SIZE - PAD * 2;
+  const QUADS = {
+    all: { x: [0, 10], y: [0, 10] },
+    tl:  { x: [0, 5],  y: [5, 10], name: "ほろ苦い × キャラメル全開" },
+    tr:  { x: [5, 10], y: [5, 10], name: "甘い × キャラメル全開" },
+    bl:  { x: [0, 5],  y: [0, 5],  name: "ほろ苦い × ほんのり" },
+    br:  { x: [5, 10], y: [0, 5],  name: "甘い × ほんのり" }
+  };
+  let view = "all", filter = "all", currentItems = [];
+
+  // x: 0 ほろ苦い(左) → 10 甘い(右) / y: 0 ほんのり(下) → 10 全開(上)
+  const dom = () => QUADS[view];
+  const X = v => PAD + (v - dom().x[0]) / (dom().x[1] - dom().x[0]) * INNER;
+  const Y = v => SIZE - PAD - (v - dom().y[0]) / (dom().y[1] - dom().y[0]) * INNER;
+
+  function el(tag, attrs, parent) {
+    const e = document.createElementNS(SVGNS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function label(text, x, y, cls, vertical) {
+    const g = el("g", { class: "lab " + cls }, chart);
+    if (vertical) {
+      const h = text.length * 26 + 20;
+      el("rect", { x: x - 22, y: y - h / 2, width: 44, height: h, rx: 3 }, g);
+      [...text].forEach((ch, i) => { el("text", { x, y: y - h / 2 + 30 + i * 26, "text-anchor": "middle" }, g).textContent = ch; });
+    } else {
+      const w = text.length * 23 + 30;
+      el("rect", { x: x - w / 2, y: y - 21, width: w, height: 42, rx: 3 }, g);
+      el("text", { x, y: y + 8, "text-anchor": "middle" }, g).textContent = text;
+    }
+  }
+
+  function drawFrame() {
+    chart.innerHTML = "";
+    const d = dom(), zoomed = view !== "all";
+    el("defs", {}, chart).innerHTML =
+      '<marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b9a58f"/></marker>';
+    const bg = el("rect", { class: "bg" + (zoomed ? "" : " zoomable"), x: PAD, y: PAD, width: INNER, height: INNER }, chart);
+    bg.addEventListener("click", e => {
+      hideTip();
+      if (zoomed) return;
+      const r = chart.getBoundingClientRect(), k = SIZE / r.width;
+      const sx = (e.clientX - r.left) * k, sy = (e.clientY - r.top) * k;
+      setView((sy < SIZE / 2 ? "t" : "b") + (sx < SIZE / 2 ? "l" : "r"));
+    });
+
+    const step = zoomed ? 0.5 : 1;
+    for (let v = d.x[0]; v <= d.x[1] + 1e-9; v += step) el("line", { class: "grid", x1: X(v), y1: PAD, x2: X(v), y2: SIZE - PAD }, chart);
+    for (let v = d.y[0]; v <= d.y[1] + 1e-9; v += step) el("line", { class: "grid", x1: PAD, y1: Y(v), x2: SIZE - PAD, y2: Y(v) }, chart);
+
+    if (!zoomed) {
+      const mid = SIZE / 2;
+      el("line", { class: "axis", x1: PAD - 18, y1: mid, x2: SIZE - PAD + 18, y2: mid, "marker-start": "url(#ar)", "marker-end": "url(#ar)" }, chart);
+      el("line", { class: "axis", x1: mid, y1: PAD - 18, x2: mid, y2: SIZE - PAD + 18, "marker-start": "url(#ar)", "marker-end": "url(#ar)" }, chart);
+    } else {
+      // the original center axes lie on the edges of a zoomed quadrant
+      const ax = X(5), ay = Y(5);
+      el("line", { class: "axis", x1: ax, y1: PAD, x2: ax, y2: SIZE - PAD }, chart);
+      el("line", { class: "axis", x1: PAD, y1: ay, x2: SIZE - PAD, y2: ay }, chart);
+      for (let v = d.x[0]; v <= d.x[1]; v += 1) el("text", { class: "tick", x: X(v), y: SIZE - PAD + 30, "text-anchor": "middle" }, chart).textContent = v;
+      for (let v = d.y[0]; v <= d.y[1]; v += 1) el("text", { class: "tick", x: PAD - 14, y: Y(v) + 7, "text-anchor": "end" }, chart).textContent = v;
+      el("text", { class: "qname", x: SIZE / 2, y: PAD - 32, "text-anchor": "middle" }, chart).textContent = d.name;
+    }
+    if (!zoomed) {
+      const mid = SIZE / 2;
+      label("キャラメル全開", mid, 28, "top");
+      label("ほんのり", mid, SIZE - 28, "bottom");
+      label("ほろ苦い", 28, mid, "bit", true);
+      label("甘い", SIZE - 28, mid, "sw", true);
+    }
+  }
+
+  function drawPoints(items) {
+    const d = dom();
+    const inView = items.filter(it => {
+      const x = Number(it.sweet ?? 5), y = Number(it.caramel ?? 5);
+      return x >= d.x[0] && x <= d.x[1] && y >= d.y[0] && y <= d.y[1];
+    });
+    const placed = [];
+    inView.forEach(it => {
+      const cx = X(Number(it.sweet ?? 5)), cy = Y(Number(it.caramel ?? 5));
+      const g = el("g", { class: "pt", "data-key": it.key, tabindex: 0 }, chart);
+      el("circle", { class: "halo", cx, cy, r: 22 }, g);
+      el("circle", { class: "ring", cx, cy, r: 12 }, g);
+      if (it.type === "drink") el("circle", { class: "mark", cx, cy, r: 13, fill: "#7a4a1c", stroke: "#fff", "stroke-width": 2 }, g);
+      else if (it.type === "sweets") el("circle", { class: "mark", cx, cy, r: 11, fill: "#fff", stroke: "#b8742a", "stroke-width": 5 }, g);
+      else el("rect", { class: "mark", x: cx - 11, y: cy - 11, width: 22, height: 22, rx: 3, fill: "#e0c39a", stroke: "#fff", "stroke-width": 2 }, g);
+
+      const right = cx < SIZE - 300;
+      let ly = cy + 4;
+      while (placed.some(p => Math.abs(p.y - ly) < 46 && Math.abs(p.x - cx) < 280)) ly += 46;
+      placed.push({ x: cx, y: ly });
+      const tx = right ? cx + 22 : cx - 22, anchor = right ? "start" : "end";
+      el("text", { class: "nm", x: tx, y: ly, "text-anchor": anchor }, g).textContent = it.name;
+      el("text", { class: "sh", x: tx, y: ly + 22, "text-anchor": anchor }, g).textContent = it.shop.name.toUpperCase();
+      // a larger invisible hit area for fingers
+      el("circle", { cx, cy, r: 28, fill: "transparent" }, g);
+
+      const open = e => { e.stopPropagation(); showTip(it, cx, cy); };
+      g.addEventListener("click", open);
+      g.addEventListener("keydown", e => { if (e.key === "Enter") open(e); });
+    });
+  }
+
+  function showTip(it, cx, cy) {
+    const s = it.shop;
+    document.querySelectorAll("#chart .pt").forEach(p => p.classList.toggle("active", p.dataset.key === it.key));
+    tip.innerHTML = `
+      <button class="x" aria-label="閉じる">×</button>
+      ${it.tag ? `<div class="bal">${esc(it.tag)}</div>` : ""}
+      <div class="area en">${esc(s.areaEn)}</div>
+      <div class="shop">${esc(s.name)}</div>
+      <p class="item"><span>${esc(it.type)}</span>${esc(it.name)}</p>
+      <div class="score"><span>甘さ<b>${fmtNum(it.sweet ?? 5)}</b></span><span>キャラメル感<b>${fmtNum(it.caramel ?? 5)}</b></span></div>
+      <div class="btns">
+        <a class="ig${s.instagram ? "" : " off"}" ${s.instagram ? `href="${esc(s.instagram)}" target="_blank" rel="noopener"` : ""}>${s.instagram ? "投稿を見る" : "投稿準備中"}</a>
+        <a class="mp" data-map="${esc(s.id)}">地図で確認</a>
+      </div>`;
+    tip.querySelector(".x").addEventListener("click", hideTip);
+    tip.querySelector(".mp").addEventListener("click", () => { hideTip(); showOnMap(s.id); });
+
+    // position next to the point, kept inside the chart box
+    const wrap = document.getElementById("chartWrap").getBoundingClientRect();
+    const r = chart.getBoundingClientRect(), k = r.width / SIZE;
+    const px = (r.left - wrap.left) + cx * k, py = (r.top - wrap.top) + cy * k;
+    tip.classList.add("show");
+    const tw = tip.offsetWidth, th = tip.offsetHeight;
+    let left = px + 18, top = py - th / 2;
+    if (left + tw > wrap.width - 8) left = px - tw - 18;
+    if (left < 8) left = Math.max(8, (wrap.width - tw) / 2);
+    top = Math.max(8, Math.min(top, wrap.height - th - 8));
+    tip.style.left = left + "px"; tip.style.top = top + "px";
+  }
+  function hideTip() {
+    tip.classList.remove("show");
+    document.querySelectorAll("#chart .pt").forEach(p => p.classList.remove("active"));
+  }
+  document.addEventListener("click", e => { if (!e.target.closest("#tip") && !e.target.closest("#chart")) hideTip(); });
+
+  function setView(q) {
+    view = q; hideTip();
+    document.querySelectorAll("#zoombar button").forEach(b => b.classList.toggle("on", b.dataset.q === q));
+    drawChart();
+  }
+  document.getElementById("zoombar").addEventListener("click", e => { const b = e.target.closest("button"); if (b) setView(b.dataset.q); });
+  function drawChart() { drawFrame(); drawPoints(currentItems); if (typeof animateChart === 'function' && !reduce) animateChart(); }
+
+
+  /* ================= animations ================= */
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let firstDraw = true;
+  (function titleAnim(){
+    const h = document.getElementById("title");
+    h.innerHTML = [...h.textContent].map((c, i) => `<span class="ch" style="animation-delay:${.15 + i * .07}s">${c}</span>`).join("");
+    if (!reduce) setTimeout(() => { h.classList.add("shine"); h.addEventListener("animationend", () => h.classList.remove("shine"), { once: true }); }, 1900);
+    h.querySelectorAll(".ch").forEach(c => c.addEventListener("animationend", () => { c.style.opacity = 1; c.style.animation = "none"; }, { once: true }));
+  })();
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+  }), { threshold: .12 });
+  document.querySelectorAll(".reveal").forEach(x => io.observe(x));
+  // safety net: never leave on-screen content hidden
+  setTimeout(() => document.querySelectorAll(".reveal:not(.in), .card:not(.in)").forEach(x => { if (x.getBoundingClientRect().top < innerHeight) x.classList.add("in"); }), 2500);
+  function observeCards() {
+    document.querySelectorAll(".card").forEach((c, i) => { c.style.setProperty("--d", (i % 6) * .08 + "s"); io.observe(c); });
+  }
+  // decorate the chart after each draw
+  function animateChart() {
+    const intro = firstDraw; firstDraw = false;
+    const base = intro ? .3 : 0;
+    chart.classList.remove("swap"); void chart.getBoundingClientRect(); if (!intro) chart.classList.add("swap");
+    chart.querySelectorAll("line.axis").forEach((l, i) => {
+      const len = Math.hypot(l.x2.baseVal.value - l.x1.baseVal.value, l.y2.baseVal.value - l.y1.baseVal.value);
+      l.style.setProperty("--len", len); l.style.setProperty("--d", base + i * .15 + "s"); l.classList.add("a-draw");
+    });
+    chart.querySelectorAll("line.grid, .tick, .qname").forEach(g => { g.style.setProperty("--d", base + .2 + "s"); g.classList.add("a-fade"); });
+    chart.querySelectorAll(".lab").forEach((g, i) => { g.style.setProperty("--d", base + .6 + i * .1 + "s"); g.classList.add("a-fade"); });
+    chart.querySelectorAll(".pt").forEach((g, i) => {
+      const d = base + (intro ? 1.1 : .15) + i * .12;
+      const mark = g.querySelector(".mark");
+      mark.style.setProperty("--d", d + "s"); mark.classList.add("a-pop");
+      mark.addEventListener("animationend", () => mark.classList.remove("a-pop"), { once: true });
+      g.querySelectorAll("text").forEach(t => { t.style.setProperty("--d", d + .25 + "s"); t.classList.add("a-fade"); });
+      const ring = g.querySelector(".ring"); if (ring) ring.style.setProperty("--d", d + 1 + (i % 4) * .7 + "s");
+    });
+  }
+
+  /* ================= map ================= */
+  const map = L.map("map", { scrollWheelZoom: false });
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+    maxZoom: 19, subdomains: "abcd",
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+  }).addTo(map);
+  const icon = L.divIcon({ className: "", html: '<div class="pin"></div>', iconSize: [30, 30], iconAnchor: [15, 30], popupAnchor: [0, -30] });
+  const markers = {};
+  shops.forEach(s => {
+    const m = L.marker([s.lat, s.lng], { icon });
+    m.bindPopup(`<div class="pop"><div class="area en">${esc(s.areaEn)}</div><h3>${esc(s.name)}</h3><p>${s.items.map(i => esc(i.name)).join("<br>")}</p><p><a href="${gmap(s)}" target="_blank" rel="noopener">地図アプリで開く</a></p></div>`);
+    m.on("click", () => markCard(s.id));
+    markers[s.id] = m;
+  });
+  function fit(list) {
+    if (!list.length) { map.setView([35.68, 139.76], 10); return; }
+    if (list.length === 1) { map.setView([list[0].lat, list[0].lng], 15); return; }
+    map.fitBounds(L.latLngBounds(list.map(s => [s.lat, s.lng])), { padding: [40, 40] });
+  }
+  function showOnMap(id) {
+    const s = shops.find(x => x.id === id);
+    document.getElementById("map").scrollIntoView({ behavior: "smooth", block: "center" });
+    if (!map.hasLayer(markers[id])) markers[id].addTo(map);
+    map.setView([s.lat, s.lng], 16); markers[id].openPopup(); markCard(id);
+  }
+  function markCard(id) { document.querySelectorAll(".card").forEach(c => c.classList.toggle("active", c.dataset.id === id)); }
+
+  /* ================= list ================= */
+  function render() {
+    currentItems = allItems.filter(it => filter === "all" || it.type === filter);
+    const list = shops.filter(s => currentItems.some(it => it.shop.id === s.id));
+    hideTip(); drawChart();
+    Object.entries(markers).forEach(([id, m]) => {
+      const show = list.some(s => s.id === id);
+      if (show && !map.hasLayer(m)) m.addTo(map);
+      if (!show && map.hasLayer(m)) map.removeLayer(m);
+    });
+    document.getElementById("list").innerHTML = list.map(s => `
+      <article class="card" data-id="${esc(s.id)}">
+        ${s.photo ? `<img src="images/${esc(s.photo)}" alt="${esc(s.name)}" loading="lazy">` : `<div class="noimg">no photo</div>`}
+        <div class="body">
+          <div class="area en">${esc(s.areaEn)}</div>
+          <h3>${esc(s.name)}</h3>
+          <ul>${s.items.map(i => `<li><span>${esc(i.type)}</span>${esc(i.name)}</li>`).join("")}</ul>
+          <div class="meta">${esc(s.area)}　${fmtDate(s.date)}</div>
+          ${s.comment ? `<div class="meta">${esc(s.comment)}</div>` : ""}
+          <div class="links">
+            <a data-showmap="${esc(s.id)}">地図で見る</a>
+            <a href="${gmap(s)}" target="_blank" rel="noopener">地図アプリで開く</a>
+            ${s.instagram ? `<a href="${esc(s.instagram)}" target="_blank" rel="noopener">投稿を見る</a>` : ""}
+          </div>
+        </div>
+      </article>`).join("");
+    observeCards();
+    fit(list);
+  }
+  document.getElementById("list").addEventListener("click", e => {
+    const a = e.target.closest("[data-showmap]"); if (a) showOnMap(a.dataset.showmap);
+  });
+  document.getElementById("filters").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    document.querySelectorAll("#filters button").forEach(x => x.classList.toggle("on", x === b));
+    filter = b.dataset.f; render();
+  });
+
+  render();
+</script>
+</body>
+</html>
