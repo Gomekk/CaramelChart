@@ -169,7 +169,7 @@
   </a>
   <div class="inner">
     <h1 id="title" class="en">CARAMEL CHART</h1>
-    <p>巡ったカフェのキャラメルを、味と場所で記録しています</p>
+    <p>巡ったカフェのキャラメルを、味と場所で記録</p>
     <div class="count"><b id="count">0</b> shops ／ <b id="icount">0</b> caramels</div>
   </div>
 </div>
@@ -520,10 +520,28 @@
      MAP
      ===================================================== */
   const map = L.map("map", { scrollWheelZoom: false });
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+  // main tiles (CARTO). If they fail to load, switch to the standard OpenStreetMap tiles
+  let tiles = L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
     maxZoom: 19, subdomains: "abcd",
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
   }).addTo(map);
+  let tileErrors = 0, tileOk = false;
+  tiles.on("tileload", () => { tileOk = true; });
+  tiles.on("tileerror", () => {
+    if (tileOk || ++tileErrors < 3) return;
+    map.removeLayer(tiles);
+    tiles = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(map);
+    tileOk = true;
+  });
+  // the map sits in a section that fades in, so re-measure its size once it is on screen
+  let lastList = [];
+  const refreshMap = () => { map.invalidateSize(); fit(lastList); };
+  const mapIO = new IntersectionObserver(es => { if (es[0].isIntersecting) { refreshMap(); mapIO.disconnect(); } }, { threshold: .05 });
+  mapIO.observe(document.getElementById("map"));
+  if (window.ResizeObserver) new ResizeObserver(() => map.invalidateSize()).observe(document.getElementById("map"));
+  addEventListener("load", () => map.invalidateSize());
   const icon = L.divIcon({ className: "", html: '<div class="pin"></div>', iconSize: [30, 30], iconAnchor: [15, 30], popupAnchor: [0, -30] });
   const markers = {};
   shops.forEach(s => {
@@ -581,7 +599,7 @@
         </div>
       </article>`).join("");
     document.querySelectorAll(".card").forEach((c, i) => { c.style.setProperty("--d", (i % 6) * .08 + "s"); io.observe(c); });
-    fit(list);
+    lastList = list; fit(list);
   }
   document.getElementById("list").addEventListener("click", e => {
     const a = e.target.closest("[data-showmap]"); if (a) showOnMap(a.dataset.showmap);
