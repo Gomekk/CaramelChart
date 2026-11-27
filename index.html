@@ -14,7 +14,7 @@
 <meta property="og:description" content="巡ったカフェのキャラメルを、味と場所で記録">
 <meta property="og:image" content="https://gomekk.github.io/CaramelChart/icon-512.png">
 <meta property="og:url" content="https://gomekk.github.io/CaramelChart/">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600&family=Montserrat:wght@500;600&display=swap" rel="stylesheet">
 <style>
@@ -128,13 +128,17 @@
 
   /* ---------- map ---------- */
   #map{height:46vh;min-height:300px;border:1px solid var(--line);border-radius:4px;overflow:hidden}
-  .leaflet-container{background:var(--cream);font-family:inherit}
-  .leaflet-tile-pane{filter:sepia(.28) saturate(.85) brightness(1.02)}
-  .pin{width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);
+  #map{background:var(--cream)}
+  #map .maplibregl-canvas{filter:sepia(.22) saturate(.9)}
+  .mapfail{display:flex;align-items:center;justify-content:center;height:100%;margin:0;font-size:12px;color:var(--muted)}
+  .pinwrap{width:30px;height:30px;cursor:pointer}
+  .pin{position:relative;width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);
     background:var(--caramel);border:2px solid #fff;box-shadow:0 2px 6px rgba(60,35,10,.35)}
   .pin::after{content:"";position:absolute;width:10px;height:10px;border-radius:50%;background:#fff;top:8px;left:8px}
-  .leaflet-popup-content-wrapper{border-radius:4px;background:var(--paper)}
-  .leaflet-popup-content{margin:12px 14px;font-family:"Noto Serif JP",serif;color:var(--ink)}
+  .maplibregl-popup-content{border-radius:6px;background:var(--paper);padding:12px 26px 12px 14px;font-family:"Noto Serif JP",serif;color:var(--ink);box-shadow:0 8px 24px rgba(60,35,10,.18)}
+  .maplibregl-popup-anchor-bottom .maplibregl-popup-tip{border-top-color:var(--paper)}
+  .maplibregl-popup-close-button{font-size:18px;color:var(--muted);padding:2px 6px}
+  .pop a{color:var(--caramel-dark)}
   .pop .area{font-size:9px;color:var(--caramel)}
   .pop h3{margin:2px 0 4px;font-size:15px}
   .pop p{margin:0;font-size:12px;line-height:1.6}
@@ -262,7 +266,7 @@
     }));
   })();
 </script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="shops.js"></script>
 <script>
   // ▼ ここを自分のインスタのアカウント名に変えてください（@なし）
@@ -568,47 +572,71 @@
   /* =====================================================
      MAP
      ===================================================== */
-  const map = L.map("map", { scrollWheelZoom: false });
-  // main tiles (国土地理院 淡色地図, no key needed). If they fail to load, switch to the standard OpenStreetMap tiles
-  let tiles = L.tileLayer("https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png", {
-    minZoom: 5, maxZoom: 18,
-    attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院</a>'
-  }).addTo(map);
-  let tileErrors = 0, tileOk = false;
-  tiles.on("tileload", () => { tileOk = true; });
-  tiles.on("tileerror", () => {
-    if (tileOk || ++tileErrors < 3) return;
-    map.removeLayer(tiles);
-    tiles = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-    }).addTo(map);
-    tileOk = true;
-  });
-  // the map sits in a section that fades in, so re-measure its size once it is on screen
-  let lastList = [];
-  const refreshMap = () => { map.invalidateSize(); fit(lastList); };
-  const mapIO = new IntersectionObserver(es => { if (es[0].isIntersecting) { refreshMap(); mapIO.disconnect(); } }, { threshold: .05 });
-  mapIO.observe(document.getElementById("map"));
-  if (window.ResizeObserver) new ResizeObserver(() => map.invalidateSize()).observe(document.getElementById("map"));
-  addEventListener("load", () => map.invalidateSize());
-  const icon = L.divIcon({ className: "", html: '<div class="pin"></div>', iconSize: [30, 30], iconAnchor: [15, 30], popupAnchor: [0, -30] });
-  const markers = {};
-  shops.forEach(s => {
-    const m = L.marker([s.lat, s.lng], { icon });
-    m.bindPopup(`<div class="pop"><div class="area en">${esc(s.areaEn)}</div><h3>${esc(s.name)}</h3><p>${s.items.map(i => esc(i.name)).join("<br>")}</p><p><a href="${gmap(s)}" target="_blank" rel="noopener">地図アプリで開く</a></p></div>`);
-    m.on("click", () => markCard(s.id));
-    markers[s.id] = m;
-  });
+  // OpenFreeMap (free, no key) drawn with MapLibre. If anything fails, the rest of the page keeps working.
+  const MAP_STYLE = "https://tiles.openfreemap.org/styles/positron";
+  const markers = {}, onMap = {};
+  let map = null, lastList = [];
+  try {
+    map = new maplibregl.Map({
+      container: "map", style: MAP_STYLE, center: [139.76, 35.68], zoom: 10,
+      attributionControl: { compact: true },
+      cooperativeGestures: true,
+      locale: {
+        "CooperativeGesturesHandler.WindowsHelpText": "Ctrl を押しながらスクロールで拡大・縮小",
+        "CooperativeGesturesHandler.MacHelpText": "⌘ を押しながらスクロールで拡大・縮小",
+        "CooperativeGesturesHandler.MobileHelpText": "2本指で地図を動かせます"
+      }
+    });
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-left");
+    // show place names in Japanese
+    map.on("load", () => {
+      map.getStyle().layers.forEach(l => {
+        if (l.layout && l.layout["text-field"]) {
+          try { map.setLayoutProperty(l.id, "text-field", ["coalesce", ["get", "name:ja"], ["get", "name"]]); } catch (e) {}
+        }
+      });
+    });
+    shops.forEach(s => {
+      const wrap = document.createElement("div");
+      wrap.className = "pinwrap";
+      wrap.innerHTML = '<div class="pin"></div>';
+      const popup = new maplibregl.Popup({ offset: 34, closeButton: true, maxWidth: "240px" })
+        .setHTML(`<div class="pop"><div class="area en">${esc(s.areaEn)}</div><h3>${esc(s.name)}</h3><p>${s.items.map(i => esc(i.name)).join("<br>")}</p><p><a href="${gmap(s)}" target="_blank" rel="noopener">地図アプリで開く</a></p></div>`);
+      const m = new maplibregl.Marker({ element: wrap, anchor: "bottom", offset: [0, -4] }).setLngLat([s.lng, s.lat]).setPopup(popup);
+      wrap.addEventListener("click", () => markCard(s.id));
+      markers[s.id] = m;
+    });
+    // the map sits in a section that fades in, so re-measure once it is on screen
+    const mapIO = new IntersectionObserver(es => { if (es[0].isIntersecting) { map.resize(); fit(lastList); mapIO.disconnect(); } }, { threshold: .05 });
+    mapIO.observe(document.getElementById("map"));
+    if (window.ResizeObserver) new ResizeObserver(() => map.resize()).observe(document.getElementById("map"));
+  } catch (err) {
+    console.warn("map disabled:", err);
+    map = null;
+    document.getElementById("map").innerHTML = '<p class="mapfail">地図を読み込めませんでした</p>';
+  }
+  function setMarker(id, show) {
+    if (!map || !markers[id]) return;
+    if (show && !onMap[id]) { markers[id].addTo(map); onMap[id] = true; }
+    if (!show && onMap[id]) { markers[id].remove(); onMap[id] = false; }
+  }
   function fit(list) {
-    if (!list.length) { map.setView([35.68, 139.76], 10); return; }
-    if (list.length === 1) { map.setView([list[0].lat, list[0].lng], 15); return; }
-    map.fitBounds(L.latLngBounds(list.map(s => [s.lat, s.lng])), { padding: [40, 40] });
+    if (!map) return;
+    if (!list.length) { map.jumpTo({ center: [139.76, 35.68], zoom: 10 }); return; }
+    if (list.length === 1) { map.jumpTo({ center: [list[0].lng, list[0].lat], zoom: 15 }); return; }
+    const b = new maplibregl.LngLatBounds();
+    list.forEach(s => b.extend([s.lng, s.lat]));
+    map.fitBounds(b, { padding: 50, maxZoom: 15, duration: 0 });
   }
   function showOnMap(id) {
     const s = shops.find(x => x.id === id);
     document.getElementById("map").scrollIntoView({ behavior: "smooth", block: "center" });
-    if (!map.hasLayer(markers[id])) markers[id].addTo(map);
-    map.setView([s.lat, s.lng], 16); markers[id].openPopup(); markCard(id);
+    markCard(id);
+    if (!map) return;
+    setMarker(id, true);
+    map.flyTo({ center: [s.lng, s.lat], zoom: 16, duration: 1200 });
+    const pop = markers[id].getPopup();
+    if (!pop.isOpen()) markers[id].togglePopup();
   }
   function markCard(id) { document.querySelectorAll(".card").forEach(c => c.classList.toggle("active", c.dataset.id === id)); }
 
@@ -626,11 +654,7 @@
     const list = shops.filter(s => currentItems.some(it => it.shop.id === s.id));
     hideTip();
     draw({ intro: intro && !reduce }); intro = false;
-    Object.entries(markers).forEach(([id, m]) => {
-      const show = list.some(s => s.id === id);
-      if (show && !map.hasLayer(m)) m.addTo(map);
-      if (!show && map.hasLayer(m)) map.removeLayer(m);
-    });
+    Object.keys(markers).forEach(id => setMarker(id, list.some(s => s.id === id)));
     document.getElementById("list").innerHTML = list.map(s => `
       <article class="card" data-id="${esc(s.id)}">
         ${s.photo ? `<img src="images/${esc(s.photo)}" alt="${esc(s.name)}" loading="lazy">` : `<div class="noimg">no photo</div>`}
