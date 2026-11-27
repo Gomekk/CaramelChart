@@ -42,8 +42,7 @@ window.SHOPS = [
     lng: 139.7036,
     date: "2026-11-23",
     items: [
-      { type: "drink", name: "キャラメルラテ（ICE）", kind: "キャラメルラテ", sweet: 6.0, caramel: 4.0, tag: "" },
-      { type: "sweets", name: "ニューヨークチーズケーキ", kind: "チーズケーキ", sweet: 6.0, caramel: 8.0, tag: "キャラメルソース添え" }
+      { type: "drink", name: "キャラメルラテ（ICE）", kind: "キャラメルラテ", sweet: 6.0, caramel: 4.0, tag: "" }
     ],
     photo: "caffice-shinjuku.jpg",
     instagram: "https://www.instagram.com/p/DgHsWHik03a/",
