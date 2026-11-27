@@ -331,7 +331,8 @@
       ta.remove(); return ok;
     }
     document.querySelectorAll("[data-share]").forEach(b => b.addEventListener("click", async () => {
-      const data = { title: "CARAMEL CHART", text: "巡ったカフェのキャラメルを、味と場所で記録", url: SITE_URL };
+      // only the URL is passed, so "コピー" in the share sheet copies a clean link that can be pasted straight into a browser
+      const data = { url: SITE_URL };
       if (navigator.share) {
         try { await navigator.share(data); return; } catch (e) { if (e && e.name === "AbortError") return; }
       }
