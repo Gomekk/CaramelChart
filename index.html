@@ -129,6 +129,7 @@
   /* ---------- map ---------- */
   #map{height:46vh;min-height:300px;border:1px solid var(--line);border-radius:4px;overflow:hidden}
   .leaflet-container{background:var(--cream);font-family:inherit}
+  .leaflet-tile-pane{filter:sepia(.28) saturate(.85) brightness(1.02)}
   .pin{width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);
     background:var(--caramel);border:2px solid #fff;box-shadow:0 2px 6px rgba(60,35,10,.35)}
   .pin::after{content:"";position:absolute;width:10px;height:10px;border-radius:50%;background:#fff;top:8px;left:8px}
@@ -280,7 +281,6 @@
   document.getElementById("icount").textContent = allItems.length;
 
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-  const fmtDate = d => d ? d.replaceAll("-", ".") : "";
   const fmtNum = v => (Math.round(Number(v) * 10) / 10).toFixed(1);
   const gmap = s => "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(s.name + " " + s.address);
 
@@ -569,10 +569,10 @@
      MAP
      ===================================================== */
   const map = L.map("map", { scrollWheelZoom: false });
-  // main tiles (CARTO). If they fail to load, switch to the standard OpenStreetMap tiles
-  let tiles = L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-    maxZoom: 19, subdomains: "abcd",
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+  // main tiles (国土地理院 淡色地図, no key needed). If they fail to load, switch to the standard OpenStreetMap tiles
+  let tiles = L.tileLayer("https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png", {
+    minZoom: 5, maxZoom: 18,
+    attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院</a>'
   }).addTo(map);
   let tileErrors = 0, tileOk = false;
   tiles.on("tileload", () => { tileOk = true; });
@@ -638,7 +638,7 @@
           <div class="area en">${esc(s.areaEn)}</div>
           <h3>${esc(s.name)}</h3>
           <ul>${s.items.map(i => `<li><span>${esc(i.type)}</span>${esc(i.name)}</li>`).join("")}</ul>
-          <div class="meta">${esc(s.area)}　${fmtDate(s.date)}</div>
+          <div class="meta">${esc(s.area)}</div>
           ${s.comment ? `<div class="meta">${esc(s.comment)}</div>` : ""}
           <div class="links">
             <a data-showmap="${esc(s.id)}">地図で見る</a>
