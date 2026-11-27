@@ -62,7 +62,15 @@
   h2.sec{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:600;margin:26px 0 12px}
   h2.sec .en{font-size:10px;color:var(--caramel);letter-spacing:.28em}
 
-  .filters{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:6px 16px 0}
+  .filters{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:0 0 10px}
+  .filters button:disabled{opacity:.35;pointer-events:none}
+  .kinds{display:flex;gap:6px;overflow-x:auto;padding:0 2px 12px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .kinds::-webkit-scrollbar{display:none}
+  .kinds:empty{display:none}
+  .kinds button{flex:none;font:inherit;font-size:12px;padding:5px 12px;border-radius:4px;border:1px solid var(--line);background:var(--paper);color:var(--caramel-dark);cursor:pointer;transition:background .2s,color .2s}
+  .kinds button.on{background:var(--caramel-dark);border-color:var(--caramel-dark);color:#fff}
+  .kinds button small{font-family:Montserrat,sans-serif;font-size:10px;opacity:.7;margin-left:4px}
+  #chart .empty{fill:var(--muted);font-size:20px;font-family:"Noto Serif JP",serif}
   .filters button{font:inherit;font-size:13px;padding:7px 16px;border-radius:999px;
     border:1px solid var(--caramel);background:transparent;color:var(--caramel-dark);cursor:pointer;transition:background .25s,color .25s,transform .15s}
   .filters button.on{background:var(--caramel);color:#fff}
@@ -79,16 +87,29 @@
   #chart .grid{stroke:var(--line);stroke-width:1}
   #chart .grid.half{stroke-dasharray:3 5}
   #chart .tick{fill:var(--muted);font-size:19px;font-family:Montserrat,sans-serif}
-  #chart .lab rect{fill:var(--caramel-dark)}
   #chart .lab text{fill:#fff;font-size:22px;font-family:"Noto Serif JP",serif;letter-spacing:.1em}
-  #chart .lab.bit rect{fill:var(--bitter)}
-  #chart .lab.sw rect{fill:var(--sweet)}
+  /* label colours follow how caramel is made:
+     横軸 = 煮詰め具合  ほろ苦い: 深く焦がした焦げ茶 / 甘い: 軽く煮詰めた明るい琥珀
+     縦軸 = 重さ       濃厚: バターとクリームでとろっと重い赤みのキャラメルソース / さっぱり: ミルクで薄めた淡いクリーム色 */
+  #chart .lab.bit rect{fill:#4a2810}
+  #chart .lab.sw rect{fill:#e3a94f}
+  #chart .lab.sw text{fill:#3b2a1c}
+  #chart .lab.top rect{fill:#9c4f1c}
+  #chart .lab.bottom rect{fill:#f1e4cd;stroke:#d8c2a0;stroke-width:1.5}
+  #chart .lab.bottom text{fill:#7a4a1c}
   #chart .qname{fill:var(--caramel-dark);font-size:26px;font-family:"Noto Serif JP",serif;letter-spacing:.15em}
   #chart .edge text{fill:var(--caramel);font-size:16px;font-family:"Noto Serif JP",serif;opacity:.7;letter-spacing:.06em}
   #chart .pt{cursor:pointer}
   #chart .pt text.nm{font-size:22px;fill:var(--ink);font-family:"Noto Serif JP",serif}
   #chart .pt text.sh{font-size:14px;fill:var(--muted);font-family:Montserrat,sans-serif;letter-spacing:.12em}
   #chart .pt .halo{fill:none;stroke:var(--caramel);stroke-width:2.5;opacity:0}
+  #chart .pt .lbl{opacity:0;transition:opacity .25s;pointer-events:none}
+  #chart .pt.named .lbl,#chart .pt.active .lbl{opacity:1}
+  #chart .pt.dim{opacity:.18}
+  .hlchip{display:none;width:max-content;margin:0 auto 6px;align-items:center;gap:8px;
+    background:var(--caramel-dark);color:#fff;font-size:12px;padding:5px 6px 5px 14px;border-radius:999px;box-shadow:0 4px 12px rgba(60,35,10,.2);cursor:pointer;white-space:nowrap}
+  .hlchip.show{display:flex}
+  .hlchip button{border:0;background:rgba(255,255,255,.2);color:#fff;width:22px;height:22px;border-radius:50%;font-size:14px;line-height:1;cursor:pointer}
   #chart .pt.active .halo{opacity:1}
   #chart .glow{fill:#e8a85a;pointer-events:none}
 
@@ -130,10 +151,6 @@
   #map{height:46vh;min-height:300px;border:1px solid var(--line);border-radius:4px;overflow:hidden}
   #map{background:var(--cream)}
   .mapfail{display:flex;align-items:center;justify-content:center;height:100%;margin:0;font-size:12px;color:var(--muted)}
-  .pinwrap{width:30px;height:30px;cursor:pointer}
-  .pin{position:relative;width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);
-    background:var(--caramel);border:2px solid #fff;box-shadow:0 2px 6px rgba(60,35,10,.35)}
-  .pin::after{content:"";position:absolute;width:10px;height:10px;border-radius:50%;background:#fff;top:8px;left:8px}
   .maplibregl-popup-content{border-radius:6px;background:var(--paper);padding:12px 26px 12px 14px;font-family:"Noto Serif JP",serif;color:var(--ink);box-shadow:0 8px 24px rgba(60,35,10,.18)}
   .maplibregl-popup-anchor-bottom .maplibregl-popup-tip{border-top-color:var(--paper)}
   .maplibregl-popup-close-button{font-size:18px;color:var(--muted);padding:2px 6px}
@@ -144,6 +161,12 @@
 
   /* ---------- list ---------- */
   .list{display:grid;gap:14px;padding-bottom:40px}
+  .areas{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}
+  .areas:empty{display:none}
+  .areas button{font:inherit;font-size:12px;padding:5px 13px;border-radius:999px;border:1px solid var(--line);background:var(--paper);color:var(--caramel-dark);cursor:pointer;transition:background .2s,color .2s}
+  .areas button.on{background:var(--caramel-dark);border-color:var(--caramel-dark);color:#fff}
+  .prefhead{display:flex;align-items:center;gap:10px;margin:8px 0 -4px;font-size:13px;font-weight:600;color:var(--caramel-dark);letter-spacing:.12em}
+  .prefhead::after{content:"";flex:1;height:1px;background:var(--line)}
   .card{display:flex;gap:14px;background:var(--paper);border:1px solid var(--line);border-radius:4px;padding:12px;scroll-margin-top:20px;
     transition:box-shadow .25s,border-color .25s}
   .card.active{border-color:var(--caramel);box-shadow:0 0 0 2px rgba(184,116,42,.25)}
@@ -202,23 +225,24 @@
   </div>
 </div>
 
-<div class="filters" id="filters">
-  <button data-f="all" class="on">すべて</button>
-  <button data-f="drink">drink</button>
-  <button data-f="sweets">sweets</button>
-  <button data-f="food">food</button>
-</div>
-
 <section class="reveal">
   <h2 class="sec">味のチャート <span class="en">TASTE CHART</span></h2>
+  <div class="filters" id="filters">
+    <button data-f="all">すべて</button>
+    <button data-f="drink" class="on">drink</button>
+    <button data-f="sweets">sweets</button>
+    <button data-f="food">food</button>
+  </div>
+  <div class="kinds" id="kinds"></div>
   <div class="chart-wrap" id="chartWrap">
-    <svg id="chart" viewBox="0 0 700 700" role="img" aria-label="キャラメルの味のチャート。横軸は左がほろ苦い・右が甘い、縦軸は下がほんのり・上がキャラメル全開"></svg>
+    <div class="hlchip" id="hlchip"></div>
+    <svg id="chart" viewBox="0 0 700 700" role="img" aria-label="キャラメルの味のチャート。横軸は左がほろ苦い・右が甘い、縦軸は下がさっぱり・上が濃厚"></svg>
     <div class="zoombar" id="zoombar">
       <button data-q="all" class="on">全体</button>
-      <button data-q="tl">ほろ苦い<br>×全開</button>
-      <button data-q="tr">甘い<br>×全開</button>
-      <button data-q="bl">ほろ苦い<br>×ほんのり</button>
-      <button data-q="br">甘い<br>×ほんのり</button>
+      <button data-q="tl">ほろ苦い<br>×濃厚</button>
+      <button data-q="tr">甘い<br>×濃厚</button>
+      <button data-q="bl">ほろ苦い<br>×さっぱり</button>
+      <button data-q="br">甘い<br>×さっぱり</button>
     </div>
     <div class="legend"><span><i class="d"></i>drink</span><span><i class="s"></i>sweets</span><span><i class="f"></i>food</span></div>
     <div class="tip" id="tip" role="dialog" aria-live="polite"></div>
@@ -233,6 +257,7 @@
 
 <section class="reveal">
   <h2 class="sec">お店 <span class="en">SHOPS</span></h2>
+  <div class="areas" id="areas"></div>
   <main class="list" id="list"></main>
 </section>
 
@@ -296,7 +321,7 @@
   /* =====================================================
      TASTE CHART
      x: 0 ほろ苦い(左) → 10 甘い(右)
-     y: 0 ほんのり(下) → 10 キャラメル全開(上)
+     y: 0 さっぱり(下) → 10 濃厚(上)
      ===================================================== */
   const SVGNS = "http://www.w3.org/2000/svg";
   const chart = document.getElementById("chart");
@@ -304,13 +329,14 @@
   const SIZE = 700, PAD = 80, INNER = SIZE - PAD * 2;
   const FULL = { x0: 0, x1: 10, y0: 0, y1: 10 };
   const QUADS = {
-    tl: { x0: 0, x1: 5,  y0: 5, y1: 10, name: "ほろ苦い × キャラメル全開" },
-    tr: { x0: 5, x1: 10, y0: 5, y1: 10, name: "甘い × キャラメル全開" },
-    bl: { x0: 0, x1: 5,  y0: 0, y1: 5,  name: "ほろ苦い × ほんのり" },
-    br: { x0: 5, x1: 10, y0: 0, y1: 5,  name: "甘い × ほんのり" }
+    tl: { x0: 0, x1: 5,  y0: 5, y1: 10, name: "ほろ苦い × 濃厚" },
+    tr: { x0: 5, x1: 10, y0: 5, y1: 10, name: "甘い × 濃厚" },
+    bl: { x0: 0, x1: 5,  y0: 0, y1: 5,  name: "ほろ苦い × さっぱり" },
+    br: { x0: 5, x1: 10, y0: 0, y1: 5,  name: "甘い × さっぱり" }
   };
   let cur = { ...FULL };          // the visible range
-  let filter = "all", currentItems = [], animId = 0, intro = true;
+  let filter = "drink", kindFilter = null, currentItems = [], animId = 0, intro = true;
+  const kindOf = it => it.kind || it.name;
 
   const zoomLevel = () => 1 - ((cur.x1 - cur.x0) - 5) / 5;   // 0 = full, 1 = quadrant
   const X = v => PAD + (v - cur.x0) / (cur.x1 - cur.x0) * INNER;
@@ -389,7 +415,7 @@
     const lop = clamp(1 - z * 1.6, 0, 1);
     if (lop > 0) {
       const mid = SIZE / 2, ls = [
-        label("キャラメル全開", mid, 28, "top", false, lop), label("ほんのり", mid, SIZE - 28, "bottom", false, lop),
+        label("濃厚", mid, 28, "top", false, lop), label("さっぱり", mid, SIZE - 28, "bottom", false, lop),
         label("ほろ苦い", 28, mid, "bit", true, lop), label("甘い", SIZE - 28, mid, "sw", true, lop)];
       if (opts.intro) ls.forEach((g, i) => { g.style.setProperty("--d", .2 + i * .08 + "s"); g.classList.add("a-fade"); });
     }
@@ -403,24 +429,39 @@
       const edge = el("g", { class: "edge", opacity: top * .9 }, chart);
       if (cur.x0 > .05) el("text", { x: PAD + 10, y: SIZE / 2 - 12, "text-anchor": "start" }, edge).textContent = "‹ ほろ苦い";
       if (cur.x1 < 9.95) el("text", { x: SIZE - PAD - 10, y: SIZE / 2 - 12, "text-anchor": "end" }, edge).textContent = "甘い ›";
-      if (cur.y1 < 9.95) el("text", { x: SIZE / 2, y: PAD + 24, "text-anchor": "middle" }, edge).textContent = "˄ 全開";
-      if (cur.y0 > .05) el("text", { x: SIZE / 2, y: SIZE - PAD - 12, "text-anchor": "middle" }, edge).textContent = "˅ ほんのり";
+      if (cur.y1 < 9.95) el("text", { x: SIZE / 2, y: PAD + 24, "text-anchor": "middle" }, edge).textContent = "˄ 濃厚";
+      if (cur.y0 > .05) el("text", { x: SIZE / 2, y: SIZE - PAD - 12, "text-anchor": "middle" }, edge).textContent = "˅ さっぱり";
     }
 
     drawPoints(opts);
   }
 
   function drawPoints(opts) {
-    const m = .4;
+    const m = .4, zoomed = zoomLevel() > .98;
     const inView = currentItems.filter(it => {
       const x = Number(it.sweet ?? 5), y = Number(it.caramel ?? 5);
       return x >= cur.x0 - m && x <= cur.x1 + m && y >= cur.y0 - m && y <= cur.y1 + m;
     });
+    // points that land on (almost) the same spot are spread in a small ring so every one can be tapped
+    const pos = inView.map(it => ({ it, x: X(Number(it.sweet ?? 5)), y: Y(Number(it.caramel ?? 5)) }));
+    const groups = [];
+    pos.forEach(p => {
+      const g = groups.find(g => Math.hypot(g.x - p.x, g.y - p.y) < 20);
+      if (g) g.m.push(p); else groups.push({ x: p.x, y: p.y, m: [p] });
+    });
+    groups.forEach(g => {
+      const n = g.m.length; if (n < 2) return;
+      const rad = 14 + n * 3;
+      g.m.forEach((p, k) => { const a = -Math.PI / 2 + k * 2 * Math.PI / n; p.x = g.x + rad * Math.cos(a); p.y = g.y + rad * Math.sin(a); });
+    });
     const placed = [];
     const layer = el("g", {}, chart);
-    inView.forEach((it, i) => {
-      const cx = X(Number(it.sweet ?? 5)), cy = Y(Number(it.caramel ?? 5));
-      const g = el("g", { class: "pt" + (activeKey === it.key ? " active" : ""), "data-key": it.key, tabindex: 0 }, layer);
+    if (!currentItems.length) el("text", { class: "empty", x: SIZE / 2, y: SIZE / 2 - 20, "text-anchor": "middle" }, chart).textContent = "まだ記録がありません";
+    pos.forEach(({ it, x: cx, y: cy }, i) => {
+      const dim = hlShop && it.shop.id !== hlShop;
+      // names are shown only when zoomed in, for the highlighted shop, or for the tapped point
+      const named = !dim && (zoomed || kindFilter || (hlShop && it.shop.id === hlShop));
+      const g = el("g", { class: "pt" + (activeKey === it.key ? " active" : "") + (dim ? " dim" : "") + (named ? " named" : ""), "data-key": it.key, tabindex: 0 }, layer);
       el("circle", { class: "halo", cx, cy, r: 22 }, g);
       let mark;
       if (it.type === "drink") mark = el("circle", { cx, cy, r: 13, fill: "#7a4a1c", stroke: "#fff", "stroke-width": 2 }, g);
@@ -429,23 +470,35 @@
 
       const right = cx < SIZE - 300;
       let ly = cy + 4;
-      while (placed.some(p => Math.abs(p.y - ly) < 46 && Math.abs(p.x - cx) < 280)) ly += 46;
-      placed.push({ x: cx, y: ly });
+      if (named) {
+        while (placed.some(p => Math.abs(p.y - ly) < 32 && Math.abs(p.x - cx) < 240)) ly += 32;
+        placed.push({ x: cx, y: ly });
+      }
       const tx = right ? cx + 22 : cx - 22, anchor = right ? "start" : "end";
-      const t1 = el("text", { class: "nm", x: tx, y: ly, "text-anchor": anchor }, g); t1.textContent = it.name;
-      const t2 = el("text", { class: "sh", x: tx, y: ly + 22, "text-anchor": anchor }, g); t2.textContent = it.shop.name.toUpperCase();
+      const lbl = el("g", { class: "lbl" }, g);
+      // when the name had to move down to avoid another one, a thin line ties it back to its point
+      if (named && ly > cy + 30) el("line", { x1: cx, y1: cy, x2: right ? tx - 4 : tx + 4, y2: ly - 7, stroke: "#cdb89e", "stroke-width": 1.5 }, lbl);
+      el("text", { class: "nm", x: tx, y: ly, "text-anchor": anchor }, lbl).textContent = it.shop.name;
       el("circle", { cx, cy, r: 28, fill: "transparent" }, g);
 
-      if (opts.intro) {
-        const d = .9 + i * .12;
-        mark.style.setProperty("--d", d + "s"); mark.classList.add("a-pop");
-        [t1, t2].forEach(t => { t.style.setProperty("--d", d + .25 + "s"); t.classList.add("a-fade"); });
-      }
+      if (opts.intro) { mark.style.setProperty("--d", .9 + i * .08 + "s"); mark.classList.add("a-pop"); }
       const open = e => { e.stopPropagation(); if (dragMoved) return; showTip(it, cx, cy); };
       g.addEventListener("click", open);
       g.addEventListener("keydown", e => { if (e.key === "Enter") open(e); });
     });
   }
+
+  /* ---- highlight one shop's items ---- */
+  let hlShop = null;
+  const hlchip = document.getElementById("hlchip");
+  function setHL(id) {
+    hlShop = id; hideTip();
+    const s = shops.find(x => x.id === id);
+    hlchip.innerHTML = s ? `<span>${esc(s.name)} を表示中</span><button type="button" aria-label="解除">×</button>` : "";
+    hlchip.classList.toggle("show", !!s);
+    draw();
+  }
+  hlchip.addEventListener("click", () => setHL(null));
 
   /* ---- zoom with glow ---- */
   function animateView(target, ms, glowQ, done) {
@@ -543,7 +596,7 @@
       <div class="area en">${esc(s.areaEn)}</div>
       <div class="shop">${esc(s.name)}</div>
       <p class="item"><span>${esc(it.type)}</span>${esc(it.name)}</p>
-      <div class="score"><span>甘さ<b>${fmtNum(it.sweet ?? 5)}</b></span><span>キャラメル感<b>${fmtNum(it.caramel ?? 5)}</b></span></div>
+      <div class="score"><span>甘さ<b>${fmtNum(it.sweet ?? 5)}</b></span><span>濃厚さ<b>${fmtNum(it.caramel ?? 5)}</b></span></div>
       <div class="btns">
         <a class="ig${s.instagram ? "" : " off"}" ${s.instagram ? `href="${esc(s.instagram)}" target="_blank" rel="noopener"` : ""}>${s.instagram ? "投稿を見る" : "投稿準備中"}</a>
         <a class="mp">地図で確認</a>
@@ -571,10 +624,27 @@
   /* =====================================================
      MAP
      ===================================================== */
-  // OpenFreeMap (free, no key) drawn with MapLibre. If anything fails, the rest of the page keeps working.
+  // OpenFreeMap (free, no key) drawn with MapLibre. Nearby shops are grouped into a numbered circle when zoomed out.
+  // If anything fails, the rest of the page keeps working.
   const MAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
-  const markers = {}, onMap = {};
-  let map = null, lastList = [];
+  let map = null, mapReady = false, mapPopup = null, lastList = [];
+  const geo = list => ({ type: "FeatureCollection", features: list.map(s => ({ type: "Feature", properties: { id: s.id }, geometry: { type: "Point", coordinates: [s.lng, s.lat] } })) });
+  const popupHTML = s => `<div class="pop"><div class="area en">${esc(s.areaEn)}</div><h3>${esc(s.name)}</h3><p>${s.items.map(i => esc(i.name)).join("<br>")}</p><p><a href="${gmap(s)}" target="_blank" rel="noopener">地図アプリで開く</a></p></div>`;
+  function pinImage() {
+    const c = document.createElement("canvas"); c.width = 64; c.height = 80;
+    const g = c.getContext("2d");
+    g.shadowColor = "rgba(60,35,10,.35)"; g.shadowBlur = 6; g.shadowOffsetY = 2;
+    g.beginPath();
+    g.moveTo(32, 74);
+    g.bezierCurveTo(24, 60, 10, 48, 10, 30);
+    g.arc(32, 30, 22, Math.PI, 0);
+    g.bezierCurveTo(54, 48, 40, 60, 32, 74);
+    g.closePath();
+    g.fillStyle = "#b8742a"; g.fill();
+    g.shadowColor = "transparent"; g.lineWidth = 4; g.strokeStyle = "#fff"; g.stroke();
+    g.beginPath(); g.arc(32, 30, 8, 0, Math.PI * 2); g.fillStyle = "#fff"; g.fill();
+    return g.getImageData(0, 0, 64, 80);
+  }
   try {
     map = new maplibregl.Map({
       container: "map", style: MAP_STYLE, center: [139.76, 35.68], zoom: 10,
@@ -587,23 +657,38 @@
       }
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-left");
-    // show place names in Japanese
     map.on("load", () => {
+      // place names in Japanese
       map.getStyle().layers.forEach(l => {
         if (l.layout && l.layout["text-field"]) {
           try { map.setLayoutProperty(l.id, "text-field", ["coalesce", ["get", "name:ja"], ["get", "name"]]); } catch (e) {}
         }
       });
-    });
-    shops.forEach(s => {
-      const wrap = document.createElement("div");
-      wrap.className = "pinwrap";
-      wrap.innerHTML = '<div class="pin"></div>';
-      const popup = new maplibregl.Popup({ offset: 34, closeButton: true, maxWidth: "240px" })
-        .setHTML(`<div class="pop"><div class="area en">${esc(s.areaEn)}</div><h3>${esc(s.name)}</h3><p>${s.items.map(i => esc(i.name)).join("<br>")}</p><p><a href="${gmap(s)}" target="_blank" rel="noopener">地図アプリで開く</a></p></div>`);
-      const m = new maplibregl.Marker({ element: wrap, anchor: "bottom", offset: [0, -4] }).setLngLat([s.lng, s.lat]).setPopup(popup);
-      wrap.addEventListener("click", () => markCard(s.id));
-      markers[s.id] = m;
+      map.addImage("pin", pinImage(), { pixelRatio: 2 });
+      map.addSource("shops", { type: "geojson", data: geo(lastList), cluster: true, clusterRadius: 46, clusterMaxZoom: 14 });
+      map.addLayer({ id: "clusters", type: "circle", source: "shops", filter: ["has", "point_count"], paint: {
+        "circle-color": "#7a4a1c", "circle-opacity": .92,
+        "circle-radius": ["step", ["get", "point_count"], 18, 5, 22, 15, 27],
+        "circle-stroke-width": 3, "circle-stroke-color": "#fff" } });
+      map.addLayer({ id: "cluster-count", type: "symbol", source: "shops", filter: ["has", "point_count"],
+        layout: { "text-field": ["get", "point_count_abbreviated"], "text-font": ["Noto Sans Bold"], "text-size": 14, "text-allow-overlap": true },
+        paint: { "text-color": "#fff" } });
+      map.addLayer({ id: "pins", type: "symbol", source: "shops", filter: ["!", ["has", "point_count"]],
+        layout: { "icon-image": "pin", "icon-anchor": "bottom", "icon-allow-overlap": true } });
+      map.on("click", "clusters", async e => {
+        const f = e.features[0];
+        try {
+          const z = await map.getSource("shops").getClusterExpansionZoom(f.properties.cluster_id);
+          map.easeTo({ center: f.geometry.coordinates, zoom: z + .3 });
+        } catch (err) { map.easeTo({ center: f.geometry.coordinates, zoom: map.getZoom() + 2 }); }
+      });
+      map.on("click", "pins", e => { const id = e.features[0].properties.id; openPopup(id); markCard(id); });
+      ["clusters", "pins"].forEach(l => {
+        map.on("mouseenter", l, () => { map.getCanvas().style.cursor = "pointer"; });
+        map.on("mouseleave", l, () => { map.getCanvas().style.cursor = ""; });
+      });
+      mapReady = true;
+      fit(lastList);
     });
     // the map sits in a section that fades in, so re-measure once it is on screen
     const mapIO = new IntersectionObserver(es => { if (es[0].isIntersecting) { map.resize(); fit(lastList); mapIO.disconnect(); } }, { threshold: .05 });
@@ -614,10 +699,16 @@
     map = null;
     document.getElementById("map").innerHTML = '<p class="mapfail">地図を読み込めませんでした</p>';
   }
-  function setMarker(id, show) {
-    if (!map || !markers[id]) return;
-    if (show && !onMap[id]) { markers[id].addTo(map); onMap[id] = true; }
-    if (!show && onMap[id]) { markers[id].remove(); onMap[id] = false; }
+  function setMapShops(list) {
+    lastList = list;
+    if (map && mapReady) map.getSource("shops").setData(geo(list));
+    fit(list);
+  }
+  function openPopup(id) {
+    const s = shops.find(x => x.id === id);
+    if (!map || !s) return;
+    if (mapPopup) mapPopup.remove();
+    mapPopup = new maplibregl.Popup({ offset: [0, -38], maxWidth: "240px" }).setLngLat([s.lng, s.lat]).setHTML(popupHTML(s)).addTo(map);
   }
   function fit(list) {
     if (!map) return;
@@ -632,10 +723,9 @@
     document.getElementById("map").scrollIntoView({ behavior: "smooth", block: "center" });
     markCard(id);
     if (!map) return;
-    setMarker(id, true);
+    if (!lastList.some(x => x.id === id)) setMapShops(lastList.concat([s]));
     map.flyTo({ center: [s.lng, s.lat], zoom: 16, duration: 1200 });
-    const pop = markers[id].getPopup();
-    if (!pop.isOpen()) markers[id].togglePopup();
+    openPopup(id);
   }
   function markCard(id) { document.querySelectorAll(".card").forEach(c => c.classList.toggle("active", c.dataset.id === id)); }
 
@@ -648,13 +738,56 @@
   document.querySelectorAll(".reveal").forEach(x => io.observe(x));
   setTimeout(() => document.querySelectorAll(".reveal:not(.in), .card:not(.in)").forEach(x => { if (x.getBoundingClientRect().top < innerHeight) x.classList.add("in"); }), 2500);
 
-  function render() {
-    currentItems = allItems.filter(it => filter === "all" || it.type === filter);
-    const list = shops.filter(s => currentItems.some(it => it.shop.id === s.id));
+  // prefectures from north to south (JIS order)
+  const PREFS = ["北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県","茨城県","栃木県","群馬県","埼玉県","千葉県","東京都","神奈川県",
+    "新潟県","富山県","石川県","福井県","山梨県","長野県","岐阜県","静岡県","愛知県","三重県","滋賀県","京都府","大阪府","兵庫県","奈良県","和歌山県",
+    "鳥取県","島根県","岡山県","広島県","山口県","徳島県","香川県","愛媛県","高知県","福岡県","佐賀県","長崎県","熊本県","大分県","宮崎県","鹿児島県","沖縄県"];
+  const prefOf = s => PREFS.find(p => (s.address || "").startsWith(p)) || PREFS.find(p => (s.area || "").startsWith(p.replace(/[都府県]$/, ""))) || "";
+  const prefShort = p => p === "北海道" ? p : p.replace(/[都府県]$/, "");
+  const prefRank = s => { const i = PREFS.indexOf(prefOf(s)); return i < 0 ? 99 : i; };
+  const byKana = (a, b) => (a.kana || a.name).localeCompare(b.kana || b.name, "ja");
+  let areaFilter = "all";
+
+  // chart: one type at a time (drink by default), optionally narrowed to one kind such as キャラメルラテ or チーズケーキ
+  function renderChart() {
+    document.querySelectorAll("#filters button").forEach(b => {
+      b.classList.toggle("on", b.dataset.f === filter);
+      b.disabled = b.dataset.f !== "all" && !allItems.some(it => it.type === b.dataset.f);
+    });
+    const ofType = allItems.filter(it => filter === "all" || it.type === filter);
+    const counts = {};
+    ofType.forEach(it => { counts[kindOf(it)] = (counts[kindOf(it)] || 0) + 1; });
+    const kinds = Object.keys(counts).sort((a, b) => counts[b] - counts[a] || a.localeCompare(b, "ja"));
+    if (kindFilter && !kinds.includes(kindFilter)) kindFilter = null;
+    document.getElementById("kinds").innerHTML = kinds.length
+      ? [`<button data-k="" class="${kindFilter ? "" : "on"}">すべて</button>`]
+          .concat(kinds.map(k => `<button data-k="${esc(k)}" class="${kindFilter === k ? "on" : ""}">${esc(k)}<small>${counts[k]}</small></button>`)).join("")
+      : "";
+    currentItems = ofType.filter(it => !kindFilter || kindOf(it) === kindFilter);
     hideTip();
     draw({ intro: intro && !reduce }); intro = false;
-    Object.keys(markers).forEach(id => setMarker(id, list.some(s => s.id === id)));
-    document.getElementById("list").innerHTML = list.map(s => `
+  }
+  function render() {
+    renderChart();
+    setMapShops(shops);
+    renderList(shops);
+  }
+
+  function renderList(list) {
+    // area buttons: only prefectures that have shops, north to south
+    const prefs = [...new Set(list.map(prefOf).filter(Boolean))].sort((a, b) => PREFS.indexOf(a) - PREFS.indexOf(b));
+    if (areaFilter !== "all" && !prefs.includes(areaFilter)) areaFilter = "all";
+    document.getElementById("areas").innerHTML = prefs.length > 1
+      ? [`<button data-a="all" class="${areaFilter === "all" ? "on" : ""}">すべて</button>`]
+          .concat(prefs.map(p => `<button data-a="${p}" class="${areaFilter === p ? "on" : ""}">${prefShort(p)}</button>`)).join("")
+      : "";
+    const shown = list.filter(s => areaFilter === "all" || prefOf(s) === areaFilter)
+      .sort((a, b) => prefRank(a) - prefRank(b) || byKana(a, b));
+    let html = "", last = null;
+    shown.forEach(s => {
+      const p = prefOf(s) || "その他";
+      if (p !== last) { html += `<h3 class="prefhead"><span>${esc(prefShort(p))}</span></h3>`; last = p; }
+      html += `
       <article class="card" data-id="${esc(s.id)}">
         ${s.photo ? `<img src="images/${esc(s.photo)}" alt="${esc(s.name)}" loading="lazy">` : `<div class="noimg">no photo</div>`}
         <div class="body">
@@ -664,22 +797,47 @@
           <div class="meta">${esc(s.area)}</div>
           ${s.comment ? `<div class="meta">${esc(s.comment)}</div>` : ""}
           <div class="links">
+            <a data-showchart="${esc(s.id)}">チャートで見る</a>
             <a data-showmap="${esc(s.id)}">地図で見る</a>
             <a href="${gmap(s)}" target="_blank" rel="noopener">地図アプリで開く</a>
             ${s.instagram ? `<a href="${esc(s.instagram)}" target="_blank" rel="noopener">投稿を見る</a>` : ""}
           </div>
         </div>
-      </article>`).join("");
+      </article>`;
+    });
+    document.getElementById("list").innerHTML = html;
     document.querySelectorAll(".card").forEach((c, i) => { c.style.setProperty("--d", (i % 6) * .08 + "s"); io.observe(c); });
-    lastList = list; fit(list);
   }
+  document.getElementById("areas").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    areaFilter = b.dataset.a;
+    renderList(shops);
+  });
   document.getElementById("list").addEventListener("click", e => {
     const a = e.target.closest("[data-showmap]"); if (a) showOnMap(a.dataset.showmap);
+    const c = e.target.closest("[data-showchart]");
+    if (c) {
+      if (zoomLevel() > .02) { cur = { ...FULL }; syncButtons(); }
+      // show the type of this shop's first item, with every kind, so all of its points are on the chart
+      const s = shops.find(x => x.id === c.dataset.showchart);
+      if (s && filter !== "all" && !s.items.some(it => it.type === filter)) filter = s.items[0].type;
+      kindFilter = null;
+      renderChart();
+      setHL(c.dataset.showchart);
+      document.getElementById("chartWrap").scrollIntoView({ behavior: "smooth", block: "center" });
+    }
   });
   document.getElementById("filters").addEventListener("click", e => {
     const b = e.target.closest("button"); if (!b) return;
-    document.querySelectorAll("#filters button").forEach(x => x.classList.toggle("on", x === b));
-    filter = b.dataset.f; render();
+    filter = b.dataset.f; kindFilter = null;
+    if (hlShop) setHL(null);
+    renderChart();
+  });
+  document.getElementById("kinds").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    kindFilter = b.dataset.k || null;
+    if (hlShop) setHL(null);
+    renderChart();
   });
 
   render();
