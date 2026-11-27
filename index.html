@@ -129,7 +129,6 @@
   /* ---------- map ---------- */
   #map{height:46vh;min-height:300px;border:1px solid var(--line);border-radius:4px;overflow:hidden}
   #map{background:var(--cream)}
-  #map .maplibregl-canvas{filter:sepia(.22) saturate(.9)}
   .mapfail{display:flex;align-items:center;justify-content:center;height:100%;margin:0;font-size:12px;color:var(--muted)}
   .pinwrap{width:30px;height:30px;cursor:pointer}
   .pin{position:relative;width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);
@@ -573,7 +572,7 @@
      MAP
      ===================================================== */
   // OpenFreeMap (free, no key) drawn with MapLibre. If anything fails, the rest of the page keeps working.
-  const MAP_STYLE = "https://tiles.openfreemap.org/styles/positron";
+  const MAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
   const markers = {}, onMap = {};
   let map = null, lastList = [];
   try {
