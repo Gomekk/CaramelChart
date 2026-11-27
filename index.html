@@ -182,6 +182,20 @@
   .card .noimg{width:96px;height:128px;flex:none;display:flex;align-items:center;justify-content:center;
     background:var(--line);color:var(--muted);font-size:11px;border-radius:2px}
   .card .body{min-width:0;flex:1}
+  .namerow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 6px}
+  .namerow h3{margin:0!important}
+  .cardbtn{flex:none;font:inherit;font-size:11px;padding:5px 10px;border-radius:999px;border:1px solid var(--caramel);background:transparent;color:var(--caramel-dark);cursor:pointer;transition:background .2s,color .2s}
+  .cardbtn:active{background:var(--caramel);color:#fff}
+  .cardmodal{position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;padding:16px;
+    background:rgba(40,22,8,.55);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .25s}
+  .cardmodal.show{opacity:1;pointer-events:auto}
+  .cardbox{position:relative;width:min(440px,100%);max-height:100%;overflow:auto;background:var(--cream);border-radius:10px;padding:14px 14px 12px;
+    transform:translateY(14px) scale(.98);transition:transform .3s cubic-bezier(.2,.7,.2,1)}
+  .cardmodal.show .cardbox{transform:none}
+  .cardbox img{display:block;width:100%;height:auto;border-radius:4px;border:1px solid var(--line)}
+  .cardx{position:absolute;top:6px;right:8px;z-index:1;border:0;background:rgba(255,250,243,.9);width:32px;height:32px;border-radius:50%;font-size:20px;color:var(--muted);cursor:pointer}
+  .cardsave{display:block;width:100%;margin-top:12px;font:inherit;font-size:15px;padding:12px;border-radius:999px;border:0;background:var(--caramel-dark);color:#fff;cursor:pointer}
+  .cardnote{margin:8px 0 0;text-align:center;font-size:11px;color:var(--muted)}
   .card .area{font-size:10px;color:var(--caramel)}
   .card h3{margin:2px 0 6px;font-size:18px;font-weight:600}
   .card ul{list-style:none;margin:0 0 6px;padding:0;font-size:13px;line-height:1.7}
@@ -275,6 +289,14 @@
 </footer>
 
 <div class="toast" id="toast" role="status"></div>
+<div class="cardmodal" id="cardModal" role="dialog" aria-modal="true" aria-label="お店の味わいチャート">
+  <div class="cardbox">
+    <button type="button" class="cardx" data-close aria-label="閉じる">×</button>
+    <img id="cardImg" alt="お店の味わいチャート">
+    <button type="button" class="cardsave" id="cardSave">写真に保存する</button>
+    <p class="cardnote">うまく保存できない時は、画像を長押しして「"写真"に保存」</p>
+  </div>
+</div>
 <script>
   /* share: the phone's share sheet when available, otherwise copy the link */
   (function () {
@@ -737,6 +759,174 @@
   }
   function markCard(id) { document.querySelectorAll(".card").forEach(c => c.classList.toggle("active", c.dataset.id === id)); }
 
+
+  /* =====================================================
+     SHOP CHART CARD (for viewing and for Instagram posts, 1080×1440)
+     ===================================================== */
+  // kept in its own scope so its helper names (X, Y, mark…) do not clash with the chart code
+  const openCard = (() => {
+  const cardModal = document.getElementById("cardModal");
+  const cv = document.createElement("canvas"); cv.width = 1080; cv.height = 1440;
+  const g = cv.getContext("2d");
+  const SITE = "gomekk.github.io/CaramelChart";
+  const W = 1080, H = 1440;
+  const SERIF = '"Noto Serif JP", "Hiragino Mincho ProN", serif';
+  const SANS = 'Montserrat, "Helvetica Neue", sans-serif';
+  const areaOfC = s => { const a = s.area || ""; const i = a.indexOf("・"); return i >= 0 ? a.slice(i + 1) : a; };
+
+  // chart square
+  const CX0 = 200, CY0 = 410, CS = 680;          // plot area
+  const X = v => CX0 + v / 10 * CS;
+  const Y = v => CY0 + CS - v / 10 * CS;
+
+  function spaced(text, x, y, spacing, align) {
+    // draw text with letter spacing (canvas letterSpacing is not everywhere yet)
+    const chars = [...text];
+    const widths = chars.map(c => g.measureText(c).width);
+    const total = widths.reduce((a, b) => a + b, 0) + spacing * (chars.length - 1);
+    let cx = align === "center" ? x - total / 2 : align === "right" ? x - total : x;
+    const prev = g.textAlign; g.textAlign = "left";
+    chars.forEach((c, i) => { g.fillText(c, cx, y); cx += widths[i] + spacing; });
+    g.textAlign = prev;
+  }
+  function roundRect(x, y, w, h, r) {
+    g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+  }
+  function axisLabel(text, x, y, fill, color, vertical, border) {
+    g.font = `500 30px ${SERIF}`;
+    if (vertical) {
+      const h = text.length * 36 + 24, w = 58;
+      roundRect(x - w / 2, y - h / 2, w, h, 4); g.fillStyle = fill; g.fill();
+      if (border) { g.strokeStyle = border; g.lineWidth = 2; g.stroke(); }
+      g.fillStyle = color; g.textAlign = "center"; g.textBaseline = "middle";
+      [...text].forEach((c, i) => g.fillText(c, x, y - h / 2 + 30 + i * 36));
+    } else {
+      const w = text.length * 32 + 44, h = 54;
+      roundRect(x - w / 2, y - h / 2, w, h, 4); g.fillStyle = fill; g.fill();
+      if (border) { g.strokeStyle = border; g.lineWidth = 2; g.stroke(); }
+      g.fillStyle = color; g.textAlign = "center"; g.textBaseline = "middle";
+      spaced(text, x, y + 1, 4, "center");
+    }
+  }
+  function mark(type, x, y, scale = 1, faded = false) {
+    g.save();
+    if (faded) g.globalAlpha = .35;
+    if (type === "drink") {
+      g.beginPath(); g.arc(x, y, 17 * scale, 0, Math.PI * 2); g.fillStyle = faded ? "#c9b293" : "#7a4a1c"; g.fill();
+      g.lineWidth = 3; g.strokeStyle = "#fff"; g.stroke();
+    } else if (type === "sweets") {
+      g.beginPath(); g.arc(x, y, 13 * scale, 0, Math.PI * 2); g.fillStyle = "#fff"; g.fill();
+      g.lineWidth = 7 * scale; g.strokeStyle = faded ? "#c9b293" : "#b8742a"; g.stroke();
+    } else {
+      const s = 30 * scale; roundRect(x - s / 2, y - s / 2, s, s, 4); g.fillStyle = faded ? "#dccbb2" : "#e0c39a"; g.fill();
+      g.lineWidth = 3; g.strokeStyle = "#fff"; g.stroke();
+    }
+    g.restore();
+  }
+
+  function drawCard(s) {
+    g.clearRect(0, 0, W, H);
+    g.fillStyle = "#f7f1e8"; g.fillRect(0, 0, W, H);
+
+    // heading
+    g.textBaseline = "alphabetic";
+    g.fillStyle = "#b8742a"; g.font = `600 26px ${SANS}`;
+    spaced("TASTE CHART", W / 2, 118, 9, "center");
+    g.fillStyle = "#3b2a1c"; g.font = `600 64px ${SERIF}`; g.textAlign = "center";
+    g.fillText(s.name, W / 2, 205);
+    // area: 新宿 SHINJUKU, centred as one line
+    const ar = areaOfC(s), en = (s.areaEn || "").toUpperCase();
+    g.font = `400 28px ${SERIF}`; const w1 = g.measureText(ar).width;
+    g.font = `600 18px ${SANS}`; const w2 = en ? [...en].reduce((a, c) => a + g.measureText(c).width, 0) + 5 * (en.length - 1) : 0;
+    const gap = en ? 16 : 0, sx = W / 2 - (w1 + gap + w2) / 2;
+    g.textAlign = "left"; g.fillStyle = "#8a7766"; g.font = `400 28px ${SERIF}`; g.fillText(ar, sx, 258);
+    if (en) { g.fillStyle = "#b8742a"; g.font = `600 18px ${SANS}`; spaced(en, sx + w1 + gap, 256, 5, "left"); }
+    g.textAlign = "center";
+
+    // chart card
+    roundRect(110, 312, 860, 880, 10); g.fillStyle = "#fffaf3"; g.fill(); g.strokeStyle = "#e6d9c7"; g.lineWidth = 2; g.stroke();
+    // grid
+    g.strokeStyle = "#ece2d3"; g.lineWidth = 1.5;
+    for (let v = 0; v <= 10; v++) {
+      g.beginPath(); g.moveTo(X(v), CY0); g.lineTo(X(v), CY0 + CS); g.stroke();
+      g.beginPath(); g.moveTo(CX0, Y(v)); g.lineTo(CX0 + CS, Y(v)); g.stroke();
+    }
+    // axes with arrows
+    g.strokeStyle = "#b9a58f"; g.fillStyle = "#b9a58f"; g.lineWidth = 3.5;
+    const arrow = (x, y, dx, dy) => { g.beginPath(); g.moveTo(x, y); g.lineTo(x - dx * 18 - dy * 10, y - dy * 18 - dx * 10); g.lineTo(x - dx * 18 + dy * 10, y - dy * 18 + dx * 10); g.closePath(); g.fill(); };
+    g.beginPath(); g.moveTo(X(5), CY0 - 12); g.lineTo(X(5), CY0 + CS + 12); g.stroke();
+    g.beginPath(); g.moveTo(CX0 - 12, Y(5)); g.lineTo(CX0 + CS + 12, Y(5)); g.stroke();
+    arrow(X(5), CY0 - 16, 0, -1); arrow(X(5), CY0 + CS + 16, 0, 1); arrow(CX0 - 16, Y(5), -1, 0); arrow(CX0 + CS + 16, Y(5), 1, 0);
+    // axis labels (same colours as the site)
+    axisLabel("濃厚", W / 2, 360, "#9c4f1c", "#fff");
+    axisLabel("さっぱり", W / 2, 1145, "#f1e4cd", "#7a4a1c", false, "#d8c2a0");
+    axisLabel("ほろ苦い", 142, Y(5), "#4a2810", "#fff", true);
+    axisLabel("甘い", 938, Y(5), "#e3a94f", "#3b2a1c", true);
+
+    // other shops, faint, for context
+    shops.filter(o => o.id !== s.id).forEach(o => o.items.forEach(it => mark(it.type, X(+it.sweet), Y(+it.caramel), .75, true)));
+
+    // this shop's items
+    const placed = [];
+    s.items.forEach(it => {
+      const x = X(+it.sweet), y = Y(+it.caramel);
+      mark(it.type, x, y);
+      g.font = `600 32px ${SERIF}`;
+      const name = it.name;
+      const tw = g.measureText(name).width;
+      const right = x + 28 + tw < CX0 + CS + 60;
+      let ly = y + 11;
+      while (placed.some(p => Math.abs(p - ly) < 46)) ly += 46;
+      placed.push(ly);
+      // soft backing so the name stays readable over grid lines
+      g.fillStyle = "rgba(255,250,243,.85)";
+      roundRect(right ? x + 22 : x - 30 - tw, ly - 32, tw + 12, 42, 6); g.fill();
+      g.fillStyle = "#3b2a1c"; g.textAlign = right ? "left" : "right";
+      g.fillText(name, right ? x + 28 : x - 24, ly);
+    });
+
+    // legend
+    g.textAlign = "left"; g.font = `400 26px ${SERIF}`; g.fillStyle = "#8a7766";
+    const lg = [["drink", 330], ["sweets", 500], ["food", 690]];
+    lg.forEach(([t, x]) => { mark(t, x, 1240, .8); g.fillStyle = "#8a7766"; g.fillText(t, x + 26, 1249); });
+
+    // footer
+    g.fillStyle = "#7a4a1c"; g.font = `600 24px ${SANS}`;
+    spaced("CARAMEL CHART", W / 2, 1338, 8, "center");
+    g.fillStyle = "#8a7766"; g.font = `500 22px ${SANS}`; g.textAlign = "center";
+    g.fillText(SITE, W / 2, 1378);
+
+  }
+
+
+  let cardShop = null;
+  async function openCard(id) {
+    const s = shops.find(x => x.id === id); if (!s) return;
+    cardShop = s;
+    try { await Promise.race([Promise.all([document.fonts.load(`600 64px "Noto Serif JP"`, "あ"), document.fonts.load(`600 26px Montserrat`, "A")]), new Promise(r => setTimeout(r, 2000))]); } catch (e) {}
+    drawCard(s);
+    document.getElementById("cardImg").src = cv.toDataURL("image/png");
+    cardModal.classList.add("show");
+    document.body.style.overflow = "hidden";
+  }
+  function closeCard() { cardModal.classList.remove("show"); document.body.style.overflow = ""; }
+  cardModal.addEventListener("click", e => { if (e.target === cardModal || e.target.closest("[data-close]")) closeCard(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closeCard(); });
+  document.getElementById("cardSave").addEventListener("click", () => {
+    cv.toBlob(async blob => {
+      const file = new File([blob], `caramel-chart-${cardShop ? cardShop.id : "card"}.png`, { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file] }); return; } catch (e) { if (e.name === "AbortError") return; }
+      }
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = file.name; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    }, "image/png");
+  });
+    return openCard;
+  })();
+
   /* =====================================================
      LIST + reveal on scroll
      ===================================================== */
@@ -809,11 +999,10 @@
       <article class="card" data-id="${esc(s.id)}">
         ${s.photo ? `<img src="images/${esc(s.photo)}" alt="${esc(s.name)}" loading="lazy">` : `<div class="noimg">no photo</div>`}
         <div class="body">
-          <h3>${esc(s.name)}</h3>
+          <div class="namerow"><h3>${esc(s.name)}</h3><button type="button" class="cardbtn" data-card="${esc(s.id)}">チャートを表示</button></div>
           <ul>${s.items.map(i => `<li><span>${esc(i.type)}</span>${esc(i.name)}</li>`).join("")}</ul>
           ${s.comment ? `<div class="meta">${esc(s.comment)}</div>` : ""}
           <div class="links">
-            <a data-showchart="${esc(s.id)}">チャートで見る</a>
             <a data-showmap="${esc(s.id)}">マップで見る</a>
             <a href="${gmap(s)}" target="_blank" rel="noopener">地図アプリで開く</a>
             ${s.instagram ? `<a href="${esc(s.instagram)}" target="_blank" rel="noopener">投稿を見る</a>` : ""}
@@ -831,6 +1020,7 @@
   });
   document.getElementById("list").addEventListener("click", e => {
     const a = e.target.closest("[data-showmap]"); if (a) showOnMap(a.dataset.showmap);
+    const cb = e.target.closest("[data-card]"); if (cb) openCard(cb.dataset.card);
     const c = e.target.closest("[data-showchart]");
     if (c) {
       if (zoomLevel() > .02) { cur = { ...FULL }; syncButtons(); }
