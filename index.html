@@ -37,11 +37,14 @@
   .hero .inner{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
     text-align:center;padding:0 20px 46px;color:#fff8ec;pointer-events:none}
   .hero h1{margin:0 0 12px;font-size:clamp(22px,7vw,32px);white-space:nowrap;font-weight:600;color:#fff8ec;letter-spacing:.22em;padding-left:.22em;text-shadow:0 2px 18px rgba(40,18,4,.55)}
-  .hero .tr{position:absolute;top:14px;right:14px;z-index:3;display:flex;gap:8px;opacity:0;animation:fade .8s ease 1.2s forwards}
+  /* stays in the top-right corner while scrolling */
+  .hero .tr{position:fixed;top:calc(env(safe-area-inset-top, 0px) + 14px);right:14px;z-index:1500;display:flex;gap:8px;opacity:0;animation:fade .8s ease 1.2s forwards}
   .hero .igl,.hero .share{display:flex;align-items:center;gap:6px;padding:7px 12px 7px 10px;border-radius:999px;
     font-family:Montserrat,sans-serif;font-size:11px;letter-spacing:.06em;color:#fff8ec;text-decoration:none;
     background:rgba(40,18,4,.28);border:1px solid rgba(255,236,210,.45);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
-    cursor:pointer;transition:background .25s,transform .15s}
+    cursor:pointer;transition:background .3s,border-color .3s,box-shadow .3s,transform .15s}
+  /* once past the caramel header, the buttons sit on light content, so they turn a deeper see-through brown */
+  .hero .tr.solid .igl,.hero .tr.solid .share{background:rgba(59,36,18,.72);border-color:rgba(255,236,210,.25);box-shadow:0 4px 14px rgba(40,18,4,.18)}
   .hero .igl:hover,.hero .share:hover{background:rgba(40,18,4,.45)}
   .hero .igl:active,.hero .share:active{transform:scale(.94)}
   .hero .share{font:inherit;padding:0;width:32px;height:32px;justify-content:center;align-items:center}
@@ -199,6 +202,9 @@
   .card .area{font-size:10px;color:var(--caramel)}
   .card h3{margin:2px 0 6px;font-size:18px;font-weight:600}
   .card ul{list-style:none;margin:0 0 6px;padding:0;font-size:13px;line-height:1.7}
+  .card li .itemlink{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;margin-left:4px;vertical-align:-6px;border-radius:50%;color:var(--caramel);text-decoration:none;transition:background .2s}
+  .card li .itemlink:active{background:var(--line)}
+  .card li .itemlink svg{width:14px;height:14px}
   .card li span{font-family:Montserrat,sans-serif;font-size:10px;letter-spacing:.12em;color:var(--muted);margin-right:6px}
   .card .meta{font-size:11px;color:var(--muted)}
   .links{margin-top:8px;display:flex;gap:12px;flex-wrap:wrap}
@@ -289,6 +295,14 @@
 </footer>
 
 <div class="toast" id="toast" role="status"></div>
+<script>
+  (function () {
+    const tr = document.querySelector(".hero .tr"), hero = document.getElementById("hero");
+    if (!tr || !hero) return;
+    const set = () => tr.classList.toggle("solid", hero.getBoundingClientRect().bottom < 70);
+    addEventListener("scroll", set, { passive: true }); set();
+  })();
+</script>
 <div class="cardmodal" id="cardModal" role="dialog" aria-modal="true" aria-label="お店の味わいチャート">
   <div class="cardbox">
     <button type="button" class="cardx" data-close aria-label="閉じる">×</button>
@@ -1000,7 +1014,10 @@
         ${s.photo ? `<img src="images/${esc(s.photo)}" alt="${esc(s.name)}" loading="lazy">` : `<div class="noimg">no photo</div>`}
         <div class="body">
           <div class="namerow"><h3>${esc(s.name)}</h3><button type="button" class="cardbtn" data-card="${esc(s.id)}">チャートを表示</button></div>
-          <ul>${s.items.map(i => `<li><span>${esc(i.type)}</span>${esc(i.name)}</li>`).join("")}</ul>
+          <ul>${s.items.map(i => {
+            const url = i.instagram || s.instagram;
+            return `<li><span>${esc(i.type)}</span>${esc(i.name)}${url ? `<a class="itemlink" href="${esc(url)}" target="_blank" rel="noopener" aria-label="${esc(i.name)}の投稿を見る"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></a>` : ""}</li>`;
+          }).join("")}</ul>
           ${s.comment ? `<div class="meta">${esc(s.comment)}</div>` : ""}
           <div class="links">
             <a data-showmap="${esc(s.id)}">マップで見る</a>

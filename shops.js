@@ -20,8 +20,9 @@
 //     name    : 商品名
 //     kind    : 種類（チャートで絞り込むためのタグ）。例：キャラメルラテ／キャラメルマキアート／
 //               チーズケーキ／プリン／パンケーキ など。同じ種類は同じ書き方でそろえる
-//     sweet   : 味のチャートの横軸  0＝ほろ苦い 〜 10＝甘い（小数OK 例：6.5）
-//     caramel : 味のチャートの縦軸  0＝さっぱり 〜 10＝濃厚（小数OK）
+//     sweet   : 味わいチャートの横軸  0＝ほろ苦い 〜 10＝甘い（小数OK 例：6.5）
+//     caramel : 味わいチャートの縦軸  0＝さっぱり 〜 10＝濃厚（小数OK）
+//     instagram : （任意）この商品だけ別の投稿に飛ばしたい時のURL。なければお店の instagram が使われる
 //     tag     : ポップアップの一番上に出す吹き出しのひとこと（なければ ""）
 //   photo     : images フォルダに入れた店舗外観の写真のファイル名（縦長3:4がおすすめ、なければ ""）
 //   instagram : インスタの投稿のURL（なければ ""）
@@ -41,11 +42,11 @@ window.SHOPS = [
     lng: 139.7036,
     date: "2026-11-23",
     items: [
-      { type: "drink", name: "キャラメルラテ（ICE）", kind: "キャラメルラテ", sweet: 7, caramel: 7, tag: "" },
-      { type: "sweets", name: "ニューヨークチーズケーキ", kind: "チーズケーキ", sweet: 5, caramel: 3, tag: "キャラメルソース添え" }
+      { type: "drink", name: "キャラメルラテ（ICE）", kind: "キャラメルラテ", sweet: 6.0, caramel: 4.0, tag: "" },
+      { type: "sweets", name: "ニューヨークチーズケーキ", kind: "チーズケーキ", sweet: 6.0, caramel: 8.0, tag: "キャラメルソース添え" }
     ],
     photo: "caffice-shinjuku.jpg",
-    instagram: "",
+    instagram: "https://www.instagram.com/p/DgHsWHik03a/",
     comment: ""
   }
 ];
