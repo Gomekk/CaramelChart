@@ -166,8 +166,10 @@
   .areas:empty{display:none}
   .areas button{font:inherit;font-size:12px;padding:5px 13px;border-radius:999px;border:1px solid var(--line);background:var(--paper);color:var(--caramel-dark);cursor:pointer;transition:background .2s,color .2s}
   .areas button.on{background:var(--caramel-dark);border-color:var(--caramel-dark);color:#fff}
-  .prefhead{display:flex;align-items:center;gap:10px;margin:8px 0 -4px;font-size:13px;font-weight:600;color:var(--caramel-dark);letter-spacing:.12em}
+  .prefhead{display:flex;align-items:center;gap:10px;margin:10px 0 -4px;font-size:16px;font-weight:600;color:var(--caramel-dark);letter-spacing:.12em}
   .prefhead::after{content:"";flex:1;height:1px;background:var(--line)}
+  .areahead{margin:2px 0 -6px;font-size:13px;font-weight:600;color:var(--ink);display:flex;align-items:baseline;gap:8px}
+  .areahead .en{font-size:9px;color:var(--caramel);letter-spacing:.26em}
   .card{display:flex;gap:14px;background:var(--paper);border:1px solid var(--line);border-radius:4px;padding:12px;scroll-margin-top:20px;
     transition:box-shadow .25s,border-color .25s}
   .card.active{border-color:var(--caramel);box-shadow:0 0 0 2px rgba(184,116,42,.25)}
@@ -746,6 +748,9 @@
   const prefShort = p => p === "北海道" ? p : p.replace(/[都府県]$/, "");
   const prefRank = s => { const i = PREFS.indexOf(prefOf(s)); return i < 0 ? 99 : i; };
   const byKana = (a, b) => (a.kana || a.name).localeCompare(b.kana || b.name, "ja");
+  // area inside the prefecture, e.g. 新宿 from "東京・新宿"
+  const areaOf = s => { const a = s.area || ""; const i = a.indexOf("・"); return i >= 0 ? a.slice(i + 1) : a; };
+  const byArea = (a, b) => (a.areaKana || areaOf(a)).localeCompare(b.areaKana || areaOf(b), "ja");
   let areaFilter = "all";
 
   // chart: one type at a time (drink by default), optionally narrowed to one kind such as キャラメルラテ or チーズケーキ
@@ -782,19 +787,19 @@
           .concat(prefs.map(p => `<button data-a="${p}" class="${areaFilter === p ? "on" : ""}">${prefShort(p)}</button>`)).join("")
       : "";
     const shown = list.filter(s => areaFilter === "all" || prefOf(s) === areaFilter)
-      .sort((a, b) => prefRank(a) - prefRank(b) || byKana(a, b));
-    let html = "", last = null;
+      .sort((a, b) => prefRank(a) - prefRank(b) || byArea(a, b) || byKana(a, b));
+    let html = "", last = null, lastArea = null;
     shown.forEach(s => {
       const p = prefOf(s) || "その他";
-      if (p !== last) { html += `<h3 class="prefhead"><span>${esc(prefShort(p))}</span></h3>`; last = p; }
+      if (p !== last) { html += `<h3 class="prefhead"><span>${esc(prefShort(p))}</span></h3>`; last = p; lastArea = null; }
+      const ar = areaOf(s);
+      if (ar !== lastArea) { html += `<h4 class="areahead">${esc(ar)}<span class="en">${esc(s.areaEn)}</span></h4>`; lastArea = ar; }
       html += `
       <article class="card" data-id="${esc(s.id)}">
         ${s.photo ? `<img src="images/${esc(s.photo)}" alt="${esc(s.name)}" loading="lazy">` : `<div class="noimg">no photo</div>`}
         <div class="body">
-          <div class="area en">${esc(s.areaEn)}</div>
           <h3>${esc(s.name)}</h3>
           <ul>${s.items.map(i => `<li><span>${esc(i.type)}</span>${esc(i.name)}</li>`).join("")}</ul>
-          <div class="meta">${esc(s.area)}</div>
           ${s.comment ? `<div class="meta">${esc(s.comment)}</div>` : ""}
           <div class="links">
             <a data-showchart="${esc(s.id)}">チャートで見る</a>
