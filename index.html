@@ -459,8 +459,8 @@
     if (!currentItems.length) el("text", { class: "empty", x: SIZE / 2, y: SIZE / 2 - 20, "text-anchor": "middle" }, chart).textContent = "まだ記録がありません";
     pos.forEach(({ it, x: cx, y: cy }, i) => {
       const dim = hlShop && it.shop.id !== hlShop;
-      // names are shown only when zoomed in, for the highlighted shop, or for the tapped point
-      const named = !dim && (zoomed || kindFilter || (hlShop && it.shop.id === hlShop));
+      // shop names are always shown (except for points faded out by the shop highlight)
+      const named = !dim;
       const g = el("g", { class: "pt" + (activeKey === it.key ? " active" : "") + (dim ? " dim" : "") + (named ? " named" : ""), "data-key": it.key, tabindex: 0 }, layer);
       el("circle", { class: "halo", cx, cy, r: 22 }, g);
       let mark;
