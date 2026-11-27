@@ -202,7 +202,12 @@
   .card .area{font-size:10px;color:var(--caramel)}
   .card h3{margin:2px 0 6px;font-size:18px;font-weight:600}
   .card ul{list-style:none;margin:0 0 6px;padding:0;font-size:13px;line-height:1.7}
-  .card li .itemlink{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;margin-left:4px;vertical-align:-6px;border-radius:50%;color:var(--caramel);text-decoration:none;transition:background .2s}
+  /* one line per item: type, name (cut with … if too long), magnifier */
+  /* long names wrap onto a second line; the magnifier always follows the last character */
+  .card li{display:grid;grid-template-columns:auto 1fr;align-items:baseline}
+  .card li .iname{font-style:normal;min-width:0}
+  .card li .nw{font-weight:inherit;white-space:nowrap}
+  .card li .itemlink{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin-left:1px;vertical-align:-5px;border-radius:50%;color:var(--caramel);text-decoration:none;transition:background .2s}
   .card li .itemlink:active{background:var(--line)}
   .card li .itemlink svg{width:14px;height:14px}
   .card li span{font-family:Montserrat,sans-serif;font-size:10px;letter-spacing:.12em;color:var(--muted);margin-right:6px}
@@ -631,7 +636,7 @@
   /* ---- popup ---- */
   let activeKey = null;
   function showTip(it, cx, cy) {
-    const s = it.shop;
+    const s = it.shop, post = it.instagram || s.instagram;
     activeKey = it.key;
     document.querySelectorAll("#chart .pt").forEach(p => p.classList.toggle("active", p.dataset.key === it.key));
     tip.innerHTML = `
@@ -642,7 +647,7 @@
       <p class="item"><span>${esc(it.type)}</span>${esc(it.name)}</p>
       <div class="score"><span>甘さ<b>${fmtNum(it.sweet ?? 5)}</b></span><span>濃厚さ<b>${fmtNum(it.caramel ?? 5)}</b></span></div>
       <div class="btns">
-        <a class="ig${s.instagram ? "" : " off"}" ${s.instagram ? `href="${esc(s.instagram)}" target="_blank" rel="noopener"` : ""}>${s.instagram ? "投稿を見る" : "投稿準備中"}</a>
+        <a class="ig${post ? "" : " off"}" ${post ? `href="${esc(post)}" target="_blank" rel="noopener"` : ""}>${post ? "投稿を見る" : "投稿準備中"}</a>
         <a class="mp">地図で確認</a>
       </div>`;
     tip.querySelector(".x").addEventListener("click", hideTip);
@@ -1016,13 +1021,15 @@
           <div class="namerow"><h3>${esc(s.name)}</h3><button type="button" class="cardbtn" data-card="${esc(s.id)}">チャートを表示</button></div>
           <ul>${s.items.map(i => {
             const url = i.instagram || s.instagram;
-            return `<li><span>${esc(i.type)}</span>${esc(i.name)}${url ? `<a class="itemlink" href="${esc(url)}" target="_blank" rel="noopener" aria-label="${esc(i.name)}の投稿を見る"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></a>` : ""}</li>`;
+            const icon = url ? `<a class="itemlink" href="${esc(url)}" target="_blank" rel="noopener" aria-label="${esc(i.name)}の投稿を見る"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></a>` : "";
+            // the last character and the magnifier never get split, so the icon always sits right after the name
+            const chars = [...i.name], last = chars.pop() || "";
+            return `<li><span>${esc(i.type)}</span><em class="iname">${esc(chars.join(""))}<b class="nw">${esc(last)}${icon}</b></em></li>`;
           }).join("")}</ul>
           ${s.comment ? `<div class="meta">${esc(s.comment)}</div>` : ""}
           <div class="links">
             <a data-showmap="${esc(s.id)}">マップで見る</a>
             <a href="${gmap(s)}" target="_blank" rel="noopener">地図アプリで開く</a>
-            ${s.instagram ? `<a href="${esc(s.instagram)}" target="_blank" rel="noopener">投稿を見る</a>` : ""}
           </div>
         </div>
       </article>`;
