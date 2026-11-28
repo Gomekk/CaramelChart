@@ -125,8 +125,7 @@
   .legend{display:flex;gap:16px;justify-content:center;font-size:12px;color:var(--muted);padding:10px 0 2px}
   .legend i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:5px;vertical-align:-1px}
   .legend .d{background:var(--caramel-dark)}
-  .legend .s{background:#fff;border:3px solid var(--caramel)}
-  .legend .f{background:#e0c39a;border-radius:2px}
+  .legend .s{background:var(--caramel);border-radius:2px}
   .hint{font-size:11px;color:var(--muted);text-align:center;margin:6px 0 0;line-height:1.6}
 
   /* popup */
@@ -264,7 +263,6 @@
     <button data-f="all">すべて</button>
     <button data-f="drink" class="on">drink</button>
     <button data-f="sweets">sweets</button>
-    <button data-f="food">food</button>
   </div>
   <div class="kinds" id="kinds"></div>
   <div class="chart-wrap" id="chartWrap">
@@ -277,7 +275,7 @@
       <button data-q="bl">ほろ苦い<br>×さっぱり</button>
       <button data-q="br">甘い<br>×さっぱり</button>
     </div>
-    <div class="legend"><span><i class="d"></i>drink</span><span><i class="s"></i>sweets</span><span><i class="f"></i>food</span></div>
+    <div class="legend"><span><i class="d"></i>drink</span><span><i class="s"></i>sweets</span></div>
     <div class="tip" id="tip" role="dialog" aria-live="polite"></div>
   </div>
 </section>
@@ -514,9 +512,9 @@
       const g = el("g", { class: "pt" + (activeKey === it.key ? " active" : "") + (dim ? " dim" : "") + (named ? " named" : ""), "data-key": it.key, tabindex: 0 }, layer);
       el("circle", { class: "halo", cx, cy, r: 15 }, g);
       let mark;
-      if (it.type === "drink") mark = el("circle", { cx, cy, r: 9, fill: "#7a4a1c", stroke: "#fff", "stroke-width": 1.5 }, g);
-      else if (it.type === "sweets") mark = el("circle", { cx, cy, r: 7.5, fill: "#fff", stroke: "#b8742a", "stroke-width": 3.5 }, g);
-      else mark = el("rect", { x: cx - 8, y: cy - 8, width: 16, height: 16, rx: 2, fill: "#e0c39a", stroke: "#fff", "stroke-width": 1.5 }, g);
+      // ● drink / ■ sweets
+      if (it.type === "sweets") mark = el("rect", { x: cx - 8, y: cy - 8, width: 16, height: 16, rx: 2, fill: "#b8742a", stroke: "#fff", "stroke-width": 1.5 }, g);
+      else mark = el("circle", { cx, cy, r: 9, fill: "#7a4a1c", stroke: "#fff", "stroke-width": 1.5 }, g);
 
       const right = cx < SIZE - 300;
       let ly = cy + 7;
@@ -832,14 +830,11 @@
   function mark(type, x, y, scale = 1, faded = false) {
     g.save();
     if (faded) g.globalAlpha = .35;
-    if (type === "drink") {
-      g.beginPath(); g.arc(x, y, 17 * scale, 0, Math.PI * 2); g.fillStyle = faded ? "#c9b293" : "#7a4a1c"; g.fill();
+    if (type === "sweets") {          // ■
+      const s = 30 * scale; roundRect(x - s / 2, y - s / 2, s, s, 4); g.fillStyle = faded ? "#d9c3a3" : "#b8742a"; g.fill();
       g.lineWidth = 3; g.strokeStyle = "#fff"; g.stroke();
-    } else if (type === "sweets") {
-      g.beginPath(); g.arc(x, y, 13 * scale, 0, Math.PI * 2); g.fillStyle = "#fff"; g.fill();
-      g.lineWidth = 7 * scale; g.strokeStyle = faded ? "#c9b293" : "#b8742a"; g.stroke();
-    } else {
-      const s = 30 * scale; roundRect(x - s / 2, y - s / 2, s, s, 4); g.fillStyle = faded ? "#dccbb2" : "#e0c39a"; g.fill();
+    } else {                          // ●
+      g.beginPath(); g.arc(x, y, 17 * scale, 0, Math.PI * 2); g.fillStyle = faded ? "#c9b293" : "#7a4a1c"; g.fill();
       g.lineWidth = 3; g.strokeStyle = "#fff"; g.stroke();
     }
     g.restore();
@@ -908,7 +903,7 @@
 
     // legend
     g.textAlign = "left"; g.font = `400 26px ${SERIF}`; g.fillStyle = "#8a7766";
-    const lg = [["drink", 330], ["sweets", 500], ["food", 690]];
+    const lg = [["drink", 410], ["sweets", 590]];
     lg.forEach(([t, x]) => { mark(t, x, 1240, .8); g.fillStyle = "#8a7766"; g.fillText(t, x + 26, 1249); });
 
     // footer
