@@ -762,7 +762,7 @@
     if (!map) return;
     if (!list.length) { map.jumpTo({ center: [139.76, 35.68], zoom: 10 }); return; }
     // the first view is pulled back a little so the surrounding area is visible
-    const MAX_Z = 12;
+    const MAX_Z = 7;
     if (list.length === 1) { map.jumpTo({ center: [list[0].lng, list[0].lat], zoom: MAX_Z }); return; }
     const b = new maplibregl.LngLatBounds();
     list.forEach(s => b.extend([s.lng, s.lat]));
