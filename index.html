@@ -705,6 +705,9 @@
       }
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-left");
+    // keep the map credits folded into the small (i) button (tap it to read them); the credits must stay available
+    const foldAttrib = () => document.querySelectorAll("#map .maplibregl-ctrl-attrib.maplibregl-compact-show").forEach(e => e.classList.remove("maplibregl-compact-show"));
+    map.once("load", foldAttrib); map.once("idle", foldAttrib);
     map.on("load", () => {
       // place names in Japanese
       map.getStyle().layers.forEach(l => {
