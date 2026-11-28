@@ -761,10 +761,12 @@
   function fit(list) {
     if (!map) return;
     if (!list.length) { map.jumpTo({ center: [139.76, 35.68], zoom: 10 }); return; }
-    if (list.length === 1) { map.jumpTo({ center: [list[0].lng, list[0].lat], zoom: 15 }); return; }
+    // the first view is pulled back a little so the surrounding area is visible
+    const MAX_Z = 12;
+    if (list.length === 1) { map.jumpTo({ center: [list[0].lng, list[0].lat], zoom: MAX_Z }); return; }
     const b = new maplibregl.LngLatBounds();
     list.forEach(s => b.extend([s.lng, s.lat]));
-    map.fitBounds(b, { padding: 50, maxZoom: 15, duration: 0 });
+    map.fitBounds(b, { padding: 70, maxZoom: MAX_Z, duration: 0 });
   }
   function showOnMap(id) {
     const s = shops.find(x => x.id === id);
