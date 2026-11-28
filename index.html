@@ -454,9 +454,9 @@
     }
     // center axes (they slide with the view)
     const axOp = 1;
-    if (5 >= cur.x0 && 5 <= cur.x1) el("line", { class: "axis", x1: X(5), y1: PAD - 18 * (1 - z), x2: X(5), y2: SIZE - PAD + 18 * (1 - z), opacity: axOp,
+    if (5 >= cur.x0 && 5 <= cur.x1) el("line", { class: "axis", x1: X(5), y1: PAD - 4 * (1 - z), x2: X(5), y2: SIZE - PAD + 4 * (1 - z), opacity: axOp,
       "marker-start": z < .5 ? "url(#ar)" : "", "marker-end": z < .5 ? "url(#ar)" : "" }, chart);
-    if (5 >= cur.y0 && 5 <= cur.y1) el("line", { class: "axis", x1: PAD - 18 * (1 - z), y1: Y(5), x2: SIZE - PAD + 18 * (1 - z), y2: Y(5), opacity: axOp,
+    if (5 >= cur.y0 && 5 <= cur.y1) el("line", { class: "axis", x1: PAD - 4 * (1 - z), y1: Y(5), x2: SIZE - PAD + 4 * (1 - z), y2: Y(5), opacity: axOp,
       "marker-start": z < .5 ? "url(#ar)" : "", "marker-end": z < .5 ? "url(#ar)" : "" }, chart);
 
     // axis name labels fade out while zooming
@@ -851,7 +851,7 @@
     g.fillStyle = "#3b2a1c"; g.font = `600 64px ${SERIF}`; g.textAlign = "center";
     g.fillText(s.name, W / 2, 205);
     // area: 新宿 SHINJUKU, centred as one line
-    const ar = areaOfC(s), en = (s.areaEn || "").toUpperCase();
+    const ar = s.area || areaOfC(s), en = (s.areaEn || "").toUpperCase();   // e.g. 東京・新大久保
     g.font = `400 28px ${SERIF}`; const w1 = g.measureText(ar).width;
     g.font = `600 18px ${SANS}`; const w2 = en ? [...en].reduce((a, c) => a + g.measureText(c).width, 0) + 5 * (en.length - 1) : 0;
     const gap = en ? 16 : 0, sx = W / 2 - (w1 + gap + w2) / 2;
@@ -870,24 +870,22 @@
     // axes with arrows
     g.strokeStyle = "#b9a58f"; g.fillStyle = "#b9a58f"; g.lineWidth = 3.5;
     const arrow = (x, y, dx, dy) => { g.beginPath(); g.moveTo(x, y); g.lineTo(x - dx * 18 - dy * 10, y - dy * 18 - dx * 10); g.lineTo(x - dx * 18 + dy * 10, y - dy * 18 + dx * 10); g.closePath(); g.fill(); };
-    g.beginPath(); g.moveTo(X(5), CY0 - 12); g.lineTo(X(5), CY0 + CS + 12); g.stroke();
-    g.beginPath(); g.moveTo(CX0 - 12, Y(5)); g.lineTo(CX0 + CS + 12, Y(5)); g.stroke();
-    arrow(X(5), CY0 - 16, 0, -1); arrow(X(5), CY0 + CS + 16, 0, 1); arrow(CX0 - 16, Y(5), -1, 0); arrow(CX0 + CS + 16, Y(5), 1, 0);
+    g.beginPath(); g.moveTo(X(5), CY0 + 2); g.lineTo(X(5), CY0 + CS - 2); g.stroke();
+    g.beginPath(); g.moveTo(CX0 + 2, Y(5)); g.lineTo(CX0 + CS - 2, Y(5)); g.stroke();
+    arrow(X(5), CY0 - 2, 0, -1); arrow(X(5), CY0 + CS + 2, 0, 1); arrow(CX0 - 2, Y(5), -1, 0); arrow(CX0 + CS + 2, Y(5), 1, 0);
     // axis labels (same colours as the site)
     axisLabel("濃厚", W / 2, 360, "#9c4f1c", "#fff");
     axisLabel("さっぱり", W / 2, 1145, "#f1e4cd", "#7a4a1c", false, "#d8c2a0");
-    axisLabel("ほろ苦い", 142, Y(5), "#4a2810", "#fff", true);
-    axisLabel("甘い", 938, Y(5), "#e3a94f", "#3b2a1c", true);
+    axisLabel("ほろ苦い", 154, Y(5), "#4a2810", "#fff", true);
+    axisLabel("甘い", 926, Y(5), "#e3a94f", "#3b2a1c", true);
 
-    // other shops, faint, for context
-    shops.filter(o => o.id !== s.id).forEach(o => o.items.forEach(it => mark(it.type, X(+it.sweet), Y(+it.caramel), .75, true)));
 
     // this shop's items
     const placed = [];
     s.items.forEach(it => {
       const x = X(+it.sweet), y = Y(+it.caramel);
       mark(it.type, x, y);
-      g.font = `600 32px ${SERIF}`;
+      g.font = `600 27px ${SERIF}`;
       const name = it.name;
       const tw = g.measureText(name).width;
       const right = x + 28 + tw < CX0 + CS + 60;
@@ -896,7 +894,7 @@
       placed.push(ly);
       // soft backing so the name stays readable over grid lines
       g.fillStyle = "rgba(255,250,243,.85)";
-      roundRect(right ? x + 22 : x - 30 - tw, ly - 32, tw + 12, 42, 6); g.fill();
+      roundRect(right ? x + 22 : x - 30 - tw, ly - 28, tw + 12, 37, 6); g.fill();
       g.fillStyle = "#3b2a1c"; g.textAlign = right ? "left" : "right";
       g.fillText(name, right ? x + 28 : x - 24, ly);
     });

@@ -48,4 +48,24 @@ window.SHOPS = [
     instagram: "https://www.instagram.com/p/DgHsWHik03a/",
     comment: ""
   }
+  ,
+  {
+    id: "factory45-shinokubo",
+    name: "FACTORY45",
+    kana: "ふぁくとりーよんじゅうご",
+    area: "東京・新大久保",
+    areaEn: "SHIN-OKUBO",
+    areaKana: "しんおおくぼ",
+    address: "東京都新宿区大久保1-16-27 2F",
+    lat: 35.6996,          // おおよその位置
+    lng: 139.7031,
+    date: "2026-11-28",
+    items: [
+      { type: "drink",  name: "キャラメルマキアート（HOT）", kind: "キャラメルマキアート", sweet: 7.0, caramel: 6.0, tag: "" },
+      { type: "sweets", name: "キャラメルプリンケーキ",       kind: "プリンケーキ",       sweet: 8.0, caramel: 4.3, tag: "" }
+    ],
+    photo: "factory45-shinokubo.jpg",
+    instagram: "https://www.instagram.com/p/DgSScQTEywB/",
+    comment: ""
+  }
 ];
